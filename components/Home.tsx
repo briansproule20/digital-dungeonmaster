@@ -62,6 +62,21 @@ export const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 p-4">
+        {/* Explainer Section */}
+        <div className="max-w-3xl mx-auto mb-12 text-center">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
+              Digital Dungeon Master
+            </h1>
+            <p className="text-xl text-gray-700 mb-4 leading-relaxed">
+              Practice your D&D skills, experiment with different AI personalities, or just have fun exploring fantasy worlds.
+            </p>
+            <p className="text-lg text-gray-500 font-medium">
+              Perfect for new players learning the ropes or experienced adventurers trying out creative scenarios.
+            </p>
+          </div>
+        </div>
+        
         <Chat />
       </div>
       
