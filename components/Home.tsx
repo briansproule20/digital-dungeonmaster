@@ -71,9 +71,18 @@ export const Home = () => {
             <p className="text-xl text-gray-700 mb-4 leading-relaxed">
               Practice your D&D skills, experiment with different AI personalities, or just have fun exploring fantasy worlds.
             </p>
-            <p className="text-lg text-gray-500 font-medium">
+            <p className="text-lg text-gray-500 font-medium mb-6">
               Perfect for new players learning the ropes or experienced adventurers trying out creative scenarios.
             </p>
+            
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-100">
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">How It Works</h2>
+              <p className="text-gray-700 leading-relaxed">
+                Act as a digital DM guiding your team of AI-created heroes on epic campaigns. Create unique characters with detailed backstories, 
+                then watch as they come to life in interactive adventures. Our intelligent system adapts to your choices, 
+                creating dynamic storylines where your heroes' personalities shine through every decision and battle.
+              </p>
+            </div>
           </div>
         </div>
         
