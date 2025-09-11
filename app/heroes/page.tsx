@@ -5,6 +5,7 @@ import { useEcho } from '../../echo';
 import { Hero } from '../../lib/supabase';
 import { HeroService } from '../../lib/heroes';
 import HeroForm from '../../components/HeroForm';
+import HeroChatModal from '../../components/HeroChatModal';
 import { CreateHeroInput } from '../../lib/supabase';
 
 export default function Heroes() {
@@ -16,6 +17,8 @@ export default function Heroes() {
   const [editingHero, setEditingHero] = useState<Hero | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
 
   useEffect(() => {
     const fetchUserAndHeroes = async () => {
@@ -55,6 +58,7 @@ export default function Heroes() {
       }
     } catch (error) {
       console.error('Failed to create hero:', error);
+      alert(`Failed to create hero: ${error?.message || error}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -73,6 +77,7 @@ export default function Heroes() {
       }
     } catch (error) {
       console.error('Failed to update hero:', error);
+      alert(`Failed to update hero: ${error?.message || error}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -99,6 +104,16 @@ export default function Heroes() {
   const cancelForm = () => {
     setShowForm(false);
     setEditingHero(null);
+  };
+
+  const openChatModal = (hero: Hero) => {
+    setSelectedHero(hero);
+    setShowChatModal(true);
+  };
+
+  const closeChatModal = () => {
+    setShowChatModal(false);
+    setSelectedHero(null);
   };
 
   if (isLoading) {
@@ -226,8 +241,14 @@ export default function Heroes() {
                     {user?.id === hero.user_id ? (
                       <>
                         <button
+                          onClick={() => openChatModal(hero)}
+                          className="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors text-sm"
+                        >
+                          Chat with {hero.name}
+                        </button>
+                        <button
                           onClick={() => startEdit(hero)}
-                          className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm"
                         >
                           Edit
                         </button>
@@ -240,9 +261,10 @@ export default function Heroes() {
                       </>
                     ) : (
                       <button
+                        onClick={() => openChatModal(hero)}
                         className="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors text-sm"
                       >
-                        Chat as {hero.name}
+                        Chat with {hero.name}
                       </button>
                     )}
                   </div>
@@ -252,6 +274,15 @@ export default function Heroes() {
           </div>
         )}
       </div>
+      
+      {/* Hero Chat Modal */}
+      {showChatModal && selectedHero && (
+        <HeroChatModal
+          isOpen={showChatModal}
+          onClose={closeChatModal}
+          hero={selectedHero}
+        />
+      )}
     </div>
   );
 }

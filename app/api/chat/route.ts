@@ -4,10 +4,11 @@ import { generateText } from "ai";
 export async function POST(req: Request) {
     try {
         console.log("API route called");
-        const { messages } = await req.json();
+        const { messages, heroSystemPrompt } = await req.json();
         console.log("Received messages:", messages);
+        console.log("Hero system prompt:", heroSystemPrompt);
         
-        const systemPrompt = "You are an experienced Dungeonmaster for tabletop RPGs like D&D. Help players with campaigns, characters, rules, and creative storytelling. Be enthusiastic and knowledgeable about fantasy adventures.";
+        const systemPrompt = heroSystemPrompt || "You are an experienced Dungeonmaster for tabletop RPGs like D&D. Help players with campaigns, characters, rules, and creative storytelling. Be enthusiastic and knowledgeable about fantasy adventures.";
 
         const allMessages = [
             { role: "system", content: systemPrompt },

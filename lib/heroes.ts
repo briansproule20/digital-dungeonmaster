@@ -67,7 +67,7 @@ export class HeroService {
 
     if (error) {
       console.error('Error creating hero:', error)
-      throw error
+      throw new Error(`Failed to create hero: ${error.message || JSON.stringify(error)}`)
     }
 
     return data
@@ -88,7 +88,7 @@ export class HeroService {
 
     if (error) {
       console.error('Error updating hero:', error)
-      throw error
+      throw new Error(`Failed to update hero: ${error.message || JSON.stringify(error)}`)
     }
 
     return data
