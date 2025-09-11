@@ -47,12 +47,14 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
         const samples = samplePoints.map(([x, y]) => ctx.getImageData(x, y, 1, 1).data);
 
         console.log('Raw RGB samples:');
-        samples.forEach(([r, g, b], i) => {
+        samples.forEach((data, i) => {
+          const [r, g, b] = [data[0], data[1], data[2]];
           console.log(`  Sample ${i}: RGB(${r}, ${g}, ${b})`);
         });
 
         // Convert to HSL and find dominant colors
-        const colors = samples.map(([r, g, b]) => {
+        const colors = samples.map((data) => {
+          const [r, g, b] = [data[0], data[1], data[2]];
           // Convert RGB to HSL for better color manipulation
           const max = Math.max(r, g, b) / 255;
           const min = Math.min(r, g, b) / 255;

@@ -6,7 +6,7 @@ import { Hero } from '../../lib/supabase';
 
 export default function MyParty() {
   const echoClient = useEcho();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

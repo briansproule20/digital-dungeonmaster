@@ -9,11 +9,11 @@ import { signOut as echoSignOut } from '@merit-systems/echo-next-sdk/client';
 export default function Navigation() {
   const pathname = usePathname();
   const echoClient = useEcho();
-  const [user, setUser] = useState(null);
-  const [balance, setBalance] = useState(null);
+  const [user, setUser] = useState<any>(null);
+  const [balance, setBalance] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -75,8 +75,8 @@ export default function Navigation() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
@@ -85,7 +85,7 @@ export default function Navigation() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getInitials = (name, email) => {
+  const getInitials = (name: string, email: string) => {
     if (name) {
       return name.charAt(0).toUpperCase();
     }
