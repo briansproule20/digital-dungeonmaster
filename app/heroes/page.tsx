@@ -15,6 +15,7 @@ export default function Heroes() {
   const [showForm, setShowForm] = useState(false);
   const [editingHero, setEditingHero] = useState<Hero | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
 
   useEffect(() => {
     const fetchUserAndHeroes = async () => {

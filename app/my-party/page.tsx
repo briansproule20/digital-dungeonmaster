@@ -27,14 +27,30 @@ export default function MyParty() {
 
 
   const removeFromParty = (heroId: string) => {
-    setPartyHeroes(partyHeroes.filter(h => h.id !== heroId));
+    const updatedParty = partyHeroes.filter(h => h.id !== heroId);
+    setPartyHeroes(updatedParty);
+    localStorage.setItem('myParty', JSON.stringify(updatedParty));
   };
 
   const clearParty = () => {
     if (confirm('Are you sure you want to clear the entire party?')) {
       setPartyHeroes([]);
+      localStorage.setItem('myParty', JSON.stringify([]));
     }
   };
+
+  // Load party from localStorage on component mount
+  useEffect(() => {
+    const savedParty = localStorage.getItem('myParty');
+    if (savedParty) {
+      try {
+        const party = JSON.parse(savedParty);
+        setPartyHeroes(party);
+      } catch (error) {
+        console.error('Failed to parse saved party:', error);
+      }
+    }
+  }, []);
 
   if (isLoading) {
     return (
