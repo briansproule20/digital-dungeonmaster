@@ -6,6 +6,7 @@ import { Hero } from '../../lib/supabase';
 import { HeroService } from '../../lib/heroes';
 import HeroForm from '../../components/HeroForm';
 import HeroChatModal from '../../components/HeroChatModal';
+import HeroProfileModal from '../../components/HeroProfileModal';
 import { CreateHeroInput } from '../../lib/supabase';
 
 export default function Heroes() {
@@ -19,6 +20,8 @@ export default function Heroes() {
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileHero, setProfileHero] = useState<Hero | null>(null);
 
   // Load party from localStorage on component mount
   useEffect(() => {
@@ -127,6 +130,16 @@ export default function Heroes() {
   const closeChatModal = () => {
     setShowChatModal(false);
     setSelectedHero(null);
+  };
+
+  const openProfileModal = (hero: Hero) => {
+    setProfileHero(hero);
+    setShowProfileModal(true);
+  };
+
+  const closeProfileModal = () => {
+    setShowProfileModal(false);
+    setProfileHero(null);
   };
 
   const addToParty = (hero: Hero) => {
@@ -261,7 +274,15 @@ export default function Heroes() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-xl font-bold text-gray-900 truncate">{hero.name}</h3>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 truncate">{hero.name}</h3>
+                        <button
+                          onClick={() => openProfileModal(hero)}
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        >
+                          View Full Profile
+                        </button>
+                      </div>
                       <div className="text-right">
                         <span className="text-sm text-gray-500 block">Level {hero.level}</span>
                         {user?.id === hero.user_id && (
@@ -364,6 +385,15 @@ export default function Heroes() {
           isOpen={showChatModal}
           onClose={closeChatModal}
           hero={selectedHero}
+        />
+      )}
+
+      {/* Hero Profile Modal */}
+      {showProfileModal && profileHero && (
+        <HeroProfileModal
+          isOpen={showProfileModal}
+          onClose={closeProfileModal}
+          hero={profileHero}
         />
       )}
     </div>
