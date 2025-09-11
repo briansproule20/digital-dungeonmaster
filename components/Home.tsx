@@ -79,7 +79,7 @@ export const Home = () => {
               <h2 className="text-xl font-semibold text-gray-800 mb-3">How It Works</h2>
               <p className="text-gray-700 leading-relaxed">
                 Act as a digital DM guiding your team of AI-created heroes on epic campaigns. Create unique characters with detailed backstories, 
-                then watch as they come to life in interactive adventures. Our intelligent system adapts to your choices, 
+                then watch as they come to life in interactive adventures. Our system adapts to your choices, 
                 creating dynamic storylines where your heroes' personalities shine through every decision and battle.
               </p>
             </div>

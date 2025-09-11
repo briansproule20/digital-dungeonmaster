@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEcho } from '../../echo';
 import { Hero } from '../../lib/supabase';
 
 export default function Campaigns() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const echoClient = useEcho();
   const [user, setUser] = useState<any>(null);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fromParty, setFromParty] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -26,6 +28,10 @@ export default function Campaigns() {
 
     fetchUser();
     
+    // Check if coming from party page
+    const fromPartyParam = searchParams.get('fromParty');
+    setFromParty(fromPartyParam === 'true');
+    
     // Load party from localStorage
     const savedParty = localStorage.getItem('myParty');
     if (savedParty) {
@@ -36,7 +42,7 @@ export default function Campaigns() {
         console.error('Failed to parse saved party:', error);
       }
     }
-  }, [echoClient]);
+  }, [echoClient, searchParams]);
 
   if (isLoading) {
     return (
@@ -72,9 +78,33 @@ export default function Campaigns() {
           </p>
         </div>
 
+        {/* Party Ready Banner */}
+        {fromParty && partyHeroes.length > 0 && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-green-900">Party Ready for Adventure!</h2>
+              </div>
+              <p className="text-green-800">
+                Your party of {partyHeroes.length} hero{partyHeroes.length !== 1 ? 's' : ''} is assembled and ready to embark on a campaign. 
+                Choose a difficulty level below to begin your adventure!
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Party Display Bar */}
         <div className="max-w-4xl mx-auto mb-16">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className={`rounded-lg shadow-sm border p-6 ${
+            fromParty && partyHeroes.length > 0 
+              ? 'bg-gradient-to-r from-green-50 to-white border-green-200' 
+              : 'bg-white border-gray-200'
+          }`}>
             <div className="flex items-center gap-4">
               <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                 Your Party:

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEcho } from '../../echo';
 import { Hero } from '../../lib/supabase';
 
 export default function MyParty() {
+  const router = useRouter();
   const echoClient = useEcho();
   const [user, setUser] = useState<any>(null);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
@@ -37,6 +39,11 @@ export default function MyParty() {
       setPartyHeroes([]);
       localStorage.setItem('myParty', JSON.stringify([]));
     }
+  };
+
+  const startCampaign = () => {
+    // Navigate to campaigns page with party ready to go
+    router.push('/campaigns?fromParty=true');
   };
 
   // Load party from localStorage on component mount
@@ -145,7 +152,10 @@ export default function MyParty() {
 
             {partyHeroes.length > 0 && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                <button 
+                  onClick={startCampaign}
+                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
                   Start Campaign with This Party
                 </button>
               </div>
