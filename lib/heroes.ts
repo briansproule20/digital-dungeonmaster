@@ -17,6 +17,24 @@ export class HeroService {
     return data || []
   }
 
+  // Get all public heroes (everyone can see all heroes)
+  static async getAllHeroes(): Promise<Hero[]> {
+    const { data, error } = await supabase
+      .from('heroes')
+      .select(`
+        *,
+        user_email:user_id
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching all heroes:', error)
+      throw error
+    }
+
+    return data || []
+  }
+
   // Get a specific hero by ID
   static async getHero(heroId: string, userId: string): Promise<Hero | null> {
     const { data, error } = await supabase
