@@ -20,6 +20,19 @@ export default function Heroes() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
 
+  // Load party from localStorage on component mount
+  useEffect(() => {
+    const savedParty = localStorage.getItem('myParty');
+    if (savedParty) {
+      try {
+        const party = JSON.parse(savedParty);
+        setPartyHeroes(party);
+      } catch (error) {
+        console.error('Failed to parse saved party:', error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const fetchUserAndHeroes = async () => {
       try {
@@ -116,6 +129,32 @@ export default function Heroes() {
     setSelectedHero(null);
   };
 
+  const addToParty = (hero: Hero) => {
+    if (partyHeroes.length >= 3) {
+      alert('Party is full! Remove a hero first (max 3 heroes).');
+      return;
+    }
+    
+    if (partyHeroes.find(h => h.id === hero.id)) {
+      alert('Hero is already in your party!');
+      return;
+    }
+    
+    const updatedParty = [...partyHeroes, hero];
+    setPartyHeroes(updatedParty);
+    localStorage.setItem('myParty', JSON.stringify(updatedParty));
+  };
+
+  const removeFromParty = (heroId: string) => {
+    const updatedParty = partyHeroes.filter(h => h.id !== heroId);
+    setPartyHeroes(updatedParty);
+    localStorage.setItem('myParty', JSON.stringify(updatedParty));
+  };
+
+  const isInParty = (heroId: string) => {
+    return partyHeroes.some(h => h.id === heroId);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -162,15 +201,32 @@ export default function Heroes() {
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">All Heroes</h1>
             <p className="text-lg text-gray-600">Browse and discover D&D characters from all players</p>
+            {user && partyHeroes.length > 0 && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  Current Party: {partyHeroes.length}/3 heroes
+                </span>
+              </div>
+            )}
           </div>
-          {user && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create New Hero
-            </button>
-          )}
+          <div className="flex gap-3">
+            {user && partyHeroes.length > 0 && (
+              <a
+                href="/my-party"
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                View Party ({partyHeroes.length})
+              </a>
+            )}
+            {user && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create New Hero
+              </button>
+            )}
+          </div>
         </div>
 
         {heroes.length === 0 ? (
@@ -190,82 +246,109 @@ export default function Heroes() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {heroes.map((hero) => (
-              <div key={hero.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                {hero.avatar_url && (
-                  <img
-                    src={hero.avatar_url}
-                    alt={hero.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-xl font-bold text-gray-900">{hero.name}</h3>
-                    <div className="text-right">
-                      <span className="text-sm text-gray-500 block">Level {hero.level}</span>
-                      {user?.id === hero.user_id && (
-                        <span className="text-xs text-blue-600 font-medium">Your Hero</span>
-                      )}
+              <div key={hero.id} className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="flex items-start gap-4 mb-4">
+                  {hero.avatar_url ? (
+                    <img
+                      src={hero.avatar_url}
+                      alt={hero.name}
+                      className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <span className="text-2xl">⚔️</span>
                     </div>
-                  </div>
-                  
-                  {(hero.race || hero.class) && (
-                    <p className="text-sm text-gray-600 mb-2">
-                      {hero.race} {hero.class}
-                    </p>
                   )}
-                  
-                  <p className="text-gray-700 mb-4 line-clamp-3">{hero.description}</p>
-                  
-                  {hero.personality_traits && hero.personality_traits.length > 0 && (
-                    <div className="mb-4">
-                      <div className="flex flex-wrap gap-1">
-                        {hero.personality_traits.slice(0, 3).map((trait, index) => (
-                          <span
-                            key={index}
-                            className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                          >
-                            {trait}
-                          </span>
-                        ))}
-                        {hero.personality_traits.length > 3 && (
-                          <span className="text-xs text-gray-400 px-2 py-1">
-                            +{hero.personality_traits.length - 3} more
-                          </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-xl font-bold text-gray-900 truncate">{hero.name}</h3>
+                      <div className="text-right">
+                        <span className="text-sm text-gray-500 block">Level {hero.level}</span>
+                        {user?.id === hero.user_id && (
+                          <span className="text-xs text-blue-600 font-medium">Your Hero</span>
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+                
+                {(hero.race || hero.class) && (
+                  <p className="text-sm text-gray-600 mb-2">
+                    {hero.race} {hero.class}
+                  </p>
+                )}
+                
+                <p className="text-gray-700 mb-4 line-clamp-3">{hero.description}</p>
+                
+                {hero.personality_traits && hero.personality_traits.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1">
+                      {hero.personality_traits.slice(0, 3).map((trait, index) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                        >
+                          {trait}
+                        </span>
+                      ))}
+                      {hero.personality_traits.length > 3 && (
+                        <span className="text-xs text-gray-400 px-2 py-1">
+                          +{hero.personality_traits.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {/* Primary action - Chat */}
+                  <button
+                    onClick={() => openChatModal(hero)}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    Chat with {hero.name}
+                  </button>
                   
+                  {/* Secondary actions */}
                   <div className="flex gap-2">
-                    {user?.id === hero.user_id ? (
+                    {user && (
+                      isInParty(hero.id) ? (
+                        <button
+                          onClick={() => removeFromParty(hero.id)}
+                          className="flex-1 bg-red-50 text-red-700 px-3 py-2 rounded-md hover:bg-red-100 transition-colors text-xs font-medium border border-red-200"
+                        >
+                          In Party ✓
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => addToParty(hero)}
+                          className={`flex-1 px-3 py-2 rounded-md transition-colors text-xs font-medium border ${
+                            partyHeroes.length >= 3 
+                              ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed' 
+                              : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                          }`}
+                          disabled={partyHeroes.length >= 3}
+                        >
+                          {partyHeroes.length >= 3 ? 'Party Full' : 'Add to Party'}
+                        </button>
+                      )
+                    )}
+                    
+                    {user?.id === hero.user_id && (
                       <>
                         <button
-                          onClick={() => openChatModal(hero)}
-                          className="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors text-sm"
-                        >
-                          Chat with {hero.name}
-                        </button>
-                        <button
                           onClick={() => startEdit(hero)}
-                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                          className="bg-gray-50 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-xs font-medium border border-gray-200"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteHero(hero.id)}
-                          className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors text-sm"
+                          className="text-red-600 hover:bg-red-50 px-3 py-2 rounded-md transition-colors text-xs font-medium border border-red-200"
                         >
                           Delete
                         </button>
                       </>
-                    ) : (
-                      <button
-                        onClick={() => openChatModal(hero)}
-                        className="flex-1 bg-blue-100 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-200 transition-colors text-sm"
-                      >
-                        Chat with {hero.name}
-                      </button>
                     )}
                   </div>
                 </div>
