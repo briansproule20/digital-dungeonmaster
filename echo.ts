@@ -7,7 +7,7 @@ export const {
   openai,
   anthropic
 } = Echo({
-  appId: "411d193c-df4f-4fc1-9fd5-26e4eed7eb94"
+  appId: process.env.NEXT_PUBLIC_ECHO_APP_ID!
 });
 
 export { signIn, useEcho } from '@merit-systems/echo-next-sdk/client';
