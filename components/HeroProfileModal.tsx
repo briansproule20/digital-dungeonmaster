@@ -9,13 +9,38 @@ interface HeroProfileModalProps {
   hero: Hero;
 }
 
-export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileModalProps) {
-  const [gradientStyle, setGradientStyle] = useState({
-    background: 'linear-gradient(to right, #2563eb, #9333ea)'
-  });
+// Generate neutral colors based on URL hash for CORS-blocked images
+const generateColorsFromUrl = (url: string) => {
+  const hash = url.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  const hue1 = Math.abs(hash) % 360;
+  const hue2 = (hue1 + 30) % 360;
+  
+  // Use more muted colors to avoid jarring transitions
+  const color1 = `hsl(${hue1}, 25%, 45%)`;
+  const color2 = `hsl(${hue2}, 20%, 55%)`;
+  
+  return {
+    background: `linear-gradient(to right, ${color1}, ${color2})`
+  };
+};
 
+export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileModalProps) {
+  // Initialize with neutral gradient to avoid jarring color changes
+  const [gradientStyle, setGradientStyle] = useState({
+    background: 'linear-gradient(to right, #6b7280, #4b5563)'
+  });
+  
+  // Track if we successfully extracted colors to avoid overriding them
+  const [hasExtractedColors, setHasExtractedColors] = useState(false);
+  
   // Extract colors from avatar image
   useEffect(() => {
+    // Only run if modal is open to avoid unnecessary processing
+    if (!isOpen) return;
     if (!hero.avatar_url) {
       // Default gradient for heroes without avatars
       setGradientStyle({
@@ -25,6 +50,8 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
     }
 
     const img = new Image();
+    
+    // First try with CORS
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
@@ -103,8 +130,8 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
         setGradientStyle({
           background: `linear-gradient(to right, ${color1Hsl}, ${color2Hsl})`
         });
+        setHasExtractedColors(true);
       } catch (error) {
-        console.error('Error extracting colors:', error);
         setGradientStyle({
           background: 'linear-gradient(to right, #2563eb, #9333ea)'
         });
@@ -112,13 +139,30 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
     };
 
     img.onerror = () => {
-      setGradientStyle({
-        background: 'linear-gradient(to right, #2563eb, #9333ea)'
-      });
+      // Try again without CORS for CORS-blocked images
+      const imgNoCors = new Image();
+      imgNoCors.onload = () => {
+        // For CORS-blocked images, only use URL-based colors if we haven't extracted real colors
+        if (!hasExtractedColors) {
+          const urlBased = generateColorsFromUrl(hero.avatar_url);
+          setGradientStyle(urlBased);
+        }
+      };
+      
+      imgNoCors.onerror = () => {
+        // Only use fallback if we haven't extracted real colors
+        if (!hasExtractedColors) {
+          setGradientStyle({
+            background: 'linear-gradient(to right, #2563eb, #9333ea)'
+          });
+        }
+      };
+      
+      imgNoCors.src = hero.avatar_url;
     };
 
     img.src = hero.avatar_url;
-  }, [hero.avatar_url]);
+  }, [hero.avatar_url, isOpen]);
 
   if (!isOpen) return null;
 
@@ -143,7 +187,7 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-8 text-white" style={gradientStyle}>
+        <div className="px-6 py-8 text-white transition-all duration-300 ease-in-out" style={gradientStyle}>
           <div className="flex items-center gap-4">
             {hero.avatar_url ? (
               <img
@@ -159,11 +203,23 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
             <div>
               <h1 className="text-3xl font-bold mb-1">{hero.name}</h1>
               {(hero.race || hero.class || hero.level) && (
-                <p className="text-xl opacity-90">
-                  {hero.level && `Level ${hero.level} `}
-                  {hero.race && `${hero.race} `}
-                  {hero.class}
-                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  {hero.level && (
+                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold tracking-wide">
+                      LEVEL {hero.level}
+                    </span>
+                  )}
+                  {hero.race && (
+                    <span className="text-lg font-medium opacity-95 italic">
+                      {hero.race}
+                    </span>
+                  )}
+                  {hero.class && (
+                    <span className="text-lg font-bold opacity-100 uppercase tracking-wider">
+                      {hero.class}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>

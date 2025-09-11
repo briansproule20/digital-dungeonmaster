@@ -275,7 +275,11 @@ export default function Heroes() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900 truncate">{hero.name}</h3>
+                        <h3 className={`font-bold text-gray-900 truncate ${
+                          hero.name.length > 20 ? 'text-sm' : 
+                          hero.name.length > 15 ? 'text-base' : 
+                          hero.name.length > 12 ? 'text-lg' : 'text-xl'
+                        }`}>{hero.name}</h3>
                         <button
                           onClick={() => openProfileModal(hero)}
                           className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
