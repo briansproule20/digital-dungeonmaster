@@ -29,19 +29,27 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
 
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // Sample colors from different parts of the image
-        const samples = [
-          ctx.getImageData(img.width * 0.2, img.height * 0.2, 1, 1).data,
-          ctx.getImageData(img.width * 0.8, img.height * 0.2, 1, 1).data,
-          ctx.getImageData(img.width * 0.5, img.height * 0.8, 1, 1).data,
-        ];
+        // Sample colors from 9 points across the image (3x3 grid)
+        const samplePoints = [];
+        for (let x = 0.2; x <= 0.8; x += 0.3) {
+          for (let y = 0.2; y <= 0.8; y += 0.3) {
+            samplePoints.push([Math.floor(img.width * x), Math.floor(img.height * y)]);
+          }
+        }
+        
+        const samples = samplePoints.map(([x, y]) => ctx.getImageData(x, y, 1, 1).data);
+
+        console.log('Raw RGB samples:');
+        samples.forEach(([r, g, b], i) => {
+          console.log(`  Sample ${i}: RGB(${r}, ${g}, ${b})`);
+        });
 
         // Convert to HSL and find dominant colors
         const colors = samples.map(([r, g, b]) => {
@@ -65,11 +73,21 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
             h /= 6;
           }
 
-          return { h: h * 360, s: s * 100, l: Math.max(l * 100, 30) }; // Ensure minimum lightness
+          return { h: h * 360, s: s * 100, l: Math.max(l * 100, 30), r, g, b }; // Ensure minimum lightness
+        });
+
+        console.log('All colors with HSL:');
+        colors.forEach((c, i) => {
+          console.log(`  Color ${i}: RGB(${c.r}, ${c.g}, ${c.b}) -> HSL(${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.l)}%)`);
         });
 
         // Pick the most vibrant colors
         const sortedColors = colors.sort((a, b) => b.s - a.s);
+        console.log('Sorted by saturation (highest first):');
+        sortedColors.forEach((c, i) => {
+          console.log(`  ${i}: RGB(${c.r}, ${c.g}, ${c.b}) -> HSL(${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.l)}%) [saturation: ${Math.round(c.s)}%]`);
+        });
+        
         const color1 = sortedColors[0];
         const color2 = sortedColors[1] || { ...color1, h: (color1.h + 60) % 360 };
 
