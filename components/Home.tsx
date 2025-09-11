@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { signIn, useEcho } from '../echo';
 import Chat from './Chat';
+import SignInModal from './SignInModal';
 
 export const Home = () => {
   const echoClient = useEcho();
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSignInModal, setShowSignInModal] = useState(false);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -16,6 +18,8 @@ export const Home = () => {
         setIsSignedIn(true);
       } catch (error) {
         setIsSignedIn(false);
+        // Show sign-in modal automatically when not authenticated
+        setShowSignInModal(true);
       } finally {
         setIsLoading(false);
       }
@@ -60,6 +64,11 @@ export const Home = () => {
       <div className="flex-1 p-4">
         <Chat />
       </div>
+      
+      <SignInModal 
+        isOpen={showSignInModal}
+        onClose={() => setShowSignInModal(false)}
+      />
     </div>
   );
 }

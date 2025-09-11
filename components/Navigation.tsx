@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { useEcho, signIn } from '../echo';
+import { signOut as echoSignOut } from '@merit-systems/echo-next-sdk/client';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -41,12 +42,34 @@ export default function Navigation() {
     fetchUserData();
   }, [echoClient]);
 
-  const signOut = () => {
-    // Clear user data and redirect
+  const handleSignOut = () => {
+    setIsDropdownOpen(false);
+    console.log('Signing out...');
+    
+    // Use Echo SDK's sign out functionality (synchronous)
+    echoSignOut();
+    
+    // Clear local state
     setUser(null);
     setBalance(null);
-    setIsDropdownOpen(false);
-    window.location.href = '/';
+    
+    // Force clear all storage to ensure complete logout
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear all cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+    }
+    
+    console.log('Sign out complete, reloading page...');
+    
+    // Force complete page reload to reset all state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   // Close dropdown when clicking outside
@@ -156,7 +179,7 @@ export default function Navigation() {
 
                         {/* Sign Out */}
                         <button
-                          onClick={signOut}
+                          onClick={handleSignOut}
                           className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                           Sign Out
