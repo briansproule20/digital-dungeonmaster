@@ -25,9 +25,9 @@ export async function POST(req: Request) {
 
         console.log("Generated response:", result.text);
 
-        return Response.json({
-            role: 'assistant',
-            content: result.text
+        return new Response(result.text, {
+            status: 200,
+            headers: { "Content-Type": "text/plain" }
         });
     } catch (error) {
         console.error("API route error:", error);
