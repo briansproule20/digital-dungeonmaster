@@ -143,7 +143,7 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
       const imgNoCors = new Image();
       imgNoCors.onload = () => {
         // For CORS-blocked images, only use URL-based colors if we haven't extracted real colors
-        if (!hasExtractedColors) {
+        if (!hasExtractedColors && hero.avatar_url) {
           const urlBased = generateColorsFromUrl(hero.avatar_url);
           setGradientStyle(urlBased);
         }
