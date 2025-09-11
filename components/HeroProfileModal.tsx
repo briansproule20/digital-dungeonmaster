@@ -167,6 +167,20 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
               </div>
             )}
 
+            {/* Appearance */}
+            {hero.appearance && (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
+                  Appearance
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {hero.appearance}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Backstory */}
             {hero.backstory && (
               <div>
@@ -239,6 +253,12 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
                     <div>
                       <dt className="font-medium text-gray-500">Level</dt>
                       <dd className="text-gray-900">{hero.level}</dd>
+                    </div>
+                  )}
+                  {hero.alignment && (
+                    <div>
+                      <dt className="font-medium text-gray-500">Alignment</dt>
+                      <dd className="text-gray-900">{hero.alignment}</dd>
                     </div>
                   )}
                   <div>

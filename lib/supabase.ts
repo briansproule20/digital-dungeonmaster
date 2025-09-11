@@ -21,6 +21,8 @@ export interface Hero {
   class?: string
   race?: string
   level?: number
+  alignment?: string
+  appearance?: string
   backstory?: string
   personality_traits?: string[]
   avatar_url?: string
@@ -33,6 +35,8 @@ export interface CreateHeroInput {
   class?: string
   race?: string
   level?: number
+  alignment?: string
+  appearance?: string
   backstory?: string
   personality_traits?: string[]
   avatar_url?: string
