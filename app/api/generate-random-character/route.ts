@@ -4,8 +4,16 @@ import { generateText } from "ai";
 export async function POST(req: Request) {
     try {
         console.log("Generate random character API route called");
+        const body = await req.json();
+        const { userPrompt } = body;
+        console.log("Request body:", body);
+        console.log("User prompt:", userPrompt);
+        console.log("User prompt exists:", !!userPrompt);
+        console.log("User prompt length:", userPrompt?.length);
         
-        const systemPrompt = `You are a creative D&D character generator. Generate a completely random, interesting D&D character with all details filled out. Return the response as a valid JSON object with the following structure:
+        const systemPrompt = `You are a creative D&D character generator. Generate a ${userPrompt ? 'character based on the user\'s ideas and inspiration' : 'completely random'} D&D character with all details filled out. 
+
+CRITICAL: Your response must be ONLY a valid JSON object with no additional text, explanations, or formatting. Return exactly this structure:
 
 {
   "name": "Character name",
@@ -33,40 +41,103 @@ MANDATORY: The system_prompt MUST begin with "You are [Character Name]," - never
 
 The system_prompt should give the AI everything needed to roleplay this character authentically in conversations. Include specific examples of how they might respond to common situations.
 
-Make the character interesting, unique, and well-developed. Use creative combinations of races and classes. The system_prompt is the most important field - make it comprehensive and immersive.`;
+Make the character interesting, unique, and well-developed. Use creative combinations of races and classes. The system_prompt is the most important field - make it comprehensive and immersive.
 
-        const userPrompt = `Generate a completely random D&D character. Make them unique and interesting with a compelling backstory. Fill out all fields with creative, specific details.
+IMPORTANT: Return ONLY the JSON object above. No additional text, explanations, or markdown formatting.`;
+
+        let requestPrompt;
+        
+        if (userPrompt && userPrompt.trim().length > 0) {
+            console.log("Using user prompt for guided generation");
+            requestPrompt = `Generate a D&D character based on these specific ideas and inspiration: "${userPrompt.trim()}"
+
+IMPORTANT: Use the user's ideas as the foundation for this character. Incorporate their vision directly into the character's design, backstory, personality, and abilities. Don't just loosely inspire - actually build the character around their specific concepts.
+
+Expand their ideas into a complete, well-developed character. Fill out all fields with creative, specific details that incorporate and build upon their exact vision.
 
 MOST IMPORTANT: The system_prompt field should be the longest and most comprehensive section - 3-4 paragraphs that give the AI complete context about who this character is, how they speak, what motivates them, and how they should behave in conversations. This prompt will be used for AI chat interactions, so include everything needed for authentic roleplay.
 
 CRITICAL FORMAT: The system_prompt MUST start with "You are [Character Name]," - never begin with titles, descriptions, or anything else. Always use second person perspective throughout.`;
+        } else {
+            console.log("Using completely random generation");
+            requestPrompt = `Generate a completely random D&D character. Make them unique and interesting with a compelling backstory. Fill out all fields with creative, specific details.
+
+MOST IMPORTANT: The system_prompt field should be the longest and most comprehensive section - 3-4 paragraphs that give the AI complete context about who this character is, how they speak, what motivates them, and how they should behave in conversations. This prompt will be used for AI chat interactions, so include everything needed for authentic roleplay.
+
+CRITICAL FORMAT: The system_prompt MUST start with "You are [Character Name]," - never begin with titles, descriptions, or anything else. Always use second person perspective throughout.`;
+        }
+
+        console.log("Final request prompt:", requestPrompt);
+        console.log("System prompt:", systemPrompt);
 
         const result = await generateText({
             model: openai("gpt-4o"), 
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
+                { role: "user", content: requestPrompt }
             ],
         });
 
-        console.log("Generated character:", result.text);
+        console.log("Generated character result:", result.text);
 
-        // Try to parse the JSON response
+        // Try to parse the JSON response with cleanup
         try {
-            const characterData = JSON.parse(result.text);
+            let jsonText = result.text.trim();
+            
+            // Clean up common JSON formatting issues
+            // Remove any text before the first {
+            const firstBrace = jsonText.indexOf('{');
+            if (firstBrace > 0) {
+                jsonText = jsonText.substring(firstBrace);
+            }
+            
+            // Remove any text after the last }
+            const lastBrace = jsonText.lastIndexOf('}');
+            if (lastBrace > 0 && lastBrace < jsonText.length - 1) {
+                jsonText = jsonText.substring(0, lastBrace + 1);
+            }
+            
+            // Try to parse the cleaned JSON
+            const characterData = JSON.parse(jsonText);
+            console.log("Successfully parsed character data:", characterData);
             
             // Validate that we have the required fields
             if (!characterData.name || !characterData.description || !characterData.system_prompt) {
+                console.error("Missing required fields in generated character:", characterData);
                 throw new Error("Missing required fields in generated character");
             }
 
+            console.log("Returning successfully generated character");
             return new Response(JSON.stringify(characterData), {
                 status: 200,
                 headers: { "Content-Type": "application/json" }
             });
         } catch (parseError) {
             console.error("Failed to parse JSON response:", parseError);
-            console.error("Raw response:", result.text);
+            console.error("Raw response that failed to parse:", result.text);
+            console.log("Attempting to extract JSON from response...");
+            
+            // Try to extract JSON using regex as last resort
+            try {
+                const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const extractedJson = jsonMatch[0];
+                    console.log("Extracted JSON:", extractedJson);
+                    const characterData = JSON.parse(extractedJson);
+                    
+                    if (characterData.name && characterData.description && characterData.system_prompt) {
+                        console.log("Successfully recovered character from extracted JSON");
+                        return new Response(JSON.stringify(characterData), {
+                            status: 200,
+                            headers: { "Content-Type": "application/json" }
+                        });
+                    }
+                }
+            } catch (extractError) {
+                console.error("Failed to extract JSON:", extractError);
+            }
+            
+            console.log("All parsing attempts failed, falling back to default character");
             
             // Fallback: return a basic character if JSON parsing fails
             const fallbackCharacter = {

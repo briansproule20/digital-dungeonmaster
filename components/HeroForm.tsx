@@ -28,6 +28,8 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
   const [newTrait, setNewTrait] = useState('');
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isGeneratingRandom, setIsGeneratingRandom] = useState(false);
+  const [showPromptBox, setShowPromptBox] = useState(false);
+  const [userPrompt, setUserPrompt] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +83,7 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
     }
   };
 
-  const generateRandomCharacter = async () => {
+  const generateRandomCharacter = async (usePrompt = false) => {
     if (!confirm('This will replace all current character data with a randomly generated character. Continue?')) {
       return;
     }
@@ -91,7 +93,9 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
       const response = await fetch('/api/generate-random-character', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          userPrompt: usePrompt ? userPrompt : null
+        })
       });
 
       if (response.ok) {
@@ -123,39 +127,43 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-sm border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          {initialData ? 'Edit Hero' : 'Create New Hero'}
-        </h2>
-        
-        {!initialData && (
-          <button
-            type="button"
-            onClick={generateRandomCharacter}
-            disabled={isGeneratingRandom || isLoading}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-          >
-            {isGeneratingRandom ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                </svg>
-                Generate Random Character
-              </>
-            )}
-          </button>
-        )}
-      </div>
+    <div className="max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Form */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {initialData ? 'Edit Hero' : 'Create New Hero'}
+              </h2>
+              
+              {!initialData && (
+                <button
+                  type="button"
+                  onClick={() => generateRandomCharacter(false)}
+                  disabled={isGeneratingRandom || isLoading}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {isGeneratingRandom ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                      </svg>
+                      Random Character
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
@@ -405,6 +413,84 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
           </button>
         </div>
       </form>
+          </div>
+        </div>
+
+        {/* AI Generation Sidebar */}
+        {!initialData && (
+          <div className="lg:col-span-1">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg shadow-sm border border-purple-200 p-6 sticky top-6">
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  AI Character Generator
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Let AI create a character based on your ideas
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Character Ideas & Inspiration
+                  </label>
+                  <textarea
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    placeholder="Describe your character ideas... e.g., 'A gruff dwarf blacksmith who lost their family to dragons' or 'An elegant elf wizard obsessed with ancient magic'"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-black text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    The AI will expand your ideas into a complete character
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => generateRandomCharacter(true)}
+                  disabled={isGeneratingRandom || isLoading || !userPrompt.trim()}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  {isGeneratingRandom ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating Character...
+                    </>
+                  ) : (
+                    'Generate from Ideas'
+                  )}
+                </button>
+
+                <div className="text-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-gradient-to-br from-purple-50 to-pink-50 text-gray-500">or</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Use the "Random Character" button above for completely random generation
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
