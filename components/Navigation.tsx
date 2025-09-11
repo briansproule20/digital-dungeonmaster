@@ -19,6 +19,7 @@ export default function Navigation() {
     { name: 'Home', href: '/' },
     { name: 'Campaigns', href: '/campaigns' },
     { name: 'Heroes', href: '/heroes' },
+    { name: 'My Party', href: '/my-party' },
     { name: 'Docs', href: '/docs' },
   ];
 
