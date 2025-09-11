@@ -131,31 +131,37 @@ export default function Campaigns() {
               </div>
             </button>
             
-            {/* Intermediate - Blue Square */}
-            <button 
-              onClick={() => router.push('/campaigns/intermediate')}
-              className="group relative w-48 h-48 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
-            >
+            {/* Intermediate - Blue Square - LOCKED */}
+            <div className="group relative w-48 h-48 bg-gray-400 cursor-not-allowed shadow-lg opacity-60">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Intermediate</div>
-                  <div className="text-blue-100 text-sm">Moderate Challenge</div>
+                  <div className="text-gray-200 text-sm">Moderate Challenge</div>
                 </div>
               </div>
-            </button>
+              {/* Lock Icon */}
+              <div className="absolute top-4 right-4 bg-gray-600 rounded-full p-2">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
             
-            {/* Advanced - Black Diamond */}
-            <button 
-              onClick={() => router.push('/campaigns/advanced')}
-              className="group relative w-48 h-48 bg-gray-900 hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl transform rotate-45"
-            >
+            {/* Advanced - Black Diamond - LOCKED */}
+            <div className="group relative w-48 h-48 bg-gray-500 cursor-not-allowed shadow-lg opacity-60 transform rotate-45">
               <div className="absolute inset-0 flex items-center justify-center transform -rotate-45">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Advanced</div>
-                  <div className="text-gray-300 text-sm">Expert Level</div>
+                  <div className="text-gray-200 text-sm">Expert Level</div>
                 </div>
               </div>
-            </button>
+              {/* Lock Icon */}
+              <div className="absolute top-4 right-4 bg-gray-700 rounded-full p-2 transform -rotate-45">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>
