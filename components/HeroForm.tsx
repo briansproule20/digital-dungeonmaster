@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { CreateHeroInput } from '../lib/supabase';
+import { uploadAvatarImage, UploadResult } from '../lib/uploadAvatar';
+import { useEcho } from '../echo';
 
 interface HeroFormProps {
   onSubmit: (heroData: CreateHeroInput) => void;
@@ -11,6 +13,7 @@ interface HeroFormProps {
 }
 
 export default function HeroForm({ onSubmit, onCancel, isLoading = false, initialData }: HeroFormProps) {
+  const echoClient = useEcho();
   const [formData, setFormData] = useState<CreateHeroInput>({
     name: initialData?.name || '',
     description: initialData?.description || '',
@@ -32,10 +35,56 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
   const [isGeneratingRandom, setIsGeneratingRandom] = useState(false);
   const [showPromptBox, setShowPromptBox] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
+  
+  // Avatar upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(
+    initialData?.avatar_url || null
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // Get user info for upload path
+      const userInfo = await echoClient.users.getUserInfo();
+      const result: UploadResult = await uploadAvatarImage(file, userInfo.id);
+
+      if (result.success && result.url) {
+        // Update form data and preview
+        setFormData({ ...formData, avatar_url: result.url });
+        setAvatarPreview(result.url);
+      } else {
+        setUploadError(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      setUploadError('Failed to upload image');
+      console.error('Upload error:', error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUrlChange = (url: string) => {
+    setFormData({ ...formData, avatar_url: url });
+    setAvatarPreview(url || null);
+    setUploadError(null);
+  };
+
+  const clearAvatar = () => {
+    setFormData({ ...formData, avatar_url: '' });
+    setAvatarPreview(null);
+    setUploadError(null);
   };
 
   const addPersonalityTrait = () => {
@@ -497,18 +546,77 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
           </div>
         </div>
 
-        {/* Avatar URL */}
+        {/* Avatar */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Avatar URL (optional)
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Avatar (optional)
           </label>
-          <input
-            type="url"
-            value={formData.avatar_url}
-            onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            placeholder="https://example.com/avatar.jpg"
-          />
+          
+          {/* Avatar Preview */}
+          {avatarPreview && (
+            <div className="mb-4 flex items-center gap-4">
+              <img 
+                src={avatarPreview} 
+                alt="Avatar preview" 
+                className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+              />
+              <button
+                type="button"
+                onClick={clearAvatar}
+                className="text-red-600 hover:text-red-700 text-sm font-medium"
+              >
+                Remove Avatar
+              </button>
+            </div>
+          )}
+
+          {/* Upload Error */}
+          {uploadError && (
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-700 text-sm">{uploadError}</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {/* File Upload */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Upload Image
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isUploading || isLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {isUploading && (
+                <p className="text-sm text-blue-600 mt-1">Uploading...</p>
+              )}
+            </div>
+
+            {/* OR Divider */}
+            <div className="flex items-center">
+              <div className="flex-1 border-t border-gray-300"></div>
+              <span className="px-3 text-xs text-gray-500 bg-white">OR</span>
+              <div className="flex-1 border-t border-gray-300"></div>
+            </div>
+
+            {/* URL Input */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Image URL
+              </label>
+              <input
+                type="url"
+                value={formData.avatar_url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                disabled={isUploading || isLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                placeholder="https://example.com/avatar.jpg"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Form Actions */}
