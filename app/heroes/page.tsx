@@ -11,7 +11,7 @@ import { CreateHeroInput } from '../../lib/supabase';
 
 export default function Heroes() {
   const echoClient = useEcho();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
