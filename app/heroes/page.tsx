@@ -74,7 +74,7 @@ export default function Heroes() {
       }
     } catch (error) {
       console.error('Failed to create hero:', error);
-      alert(`Failed to create hero: ${error?.message || error}`);
+      alert(`Failed to create hero: ${(error as Error)?.message || String(error)}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +93,7 @@ export default function Heroes() {
       }
     } catch (error) {
       console.error('Failed to update hero:', error);
-      alert(`Failed to update hero: ${error?.message || error}`);
+      alert(`Failed to update hero: ${(error as Error)?.message || String(error)}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -27,6 +27,8 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
 
   const [newTrait, setNewTrait] = useState('');
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [isGeneratingSystemPrompt, setIsGeneratingSystemPrompt] = useState(false);
+  const [isGeneratingBackstory, setIsGeneratingBackstory] = useState(false);
   const [isGeneratingRandom, setIsGeneratingRandom] = useState(false);
   const [showPromptBox, setShowPromptBox] = useState(false);
   const [userPrompt, setUserPrompt] = useState('');
@@ -80,6 +82,66 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
       alert('Failed to generate description. Please try again.');
     } finally {
       setIsGeneratingDescription(false);
+    }
+  };
+
+  const generateSystemPrompt = async () => {
+    setIsGeneratingSystemPrompt(true);
+    try {
+      const response = await fetch('/api/generate-system-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterData: formData
+        })
+      });
+
+      if (response.ok) {
+        const generatedPrompt = await response.text();
+        setFormData({
+          ...formData,
+          system_prompt: generatedPrompt
+        });
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to generate system prompt:', errorText);
+        alert('Failed to generate system prompt. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating system prompt:', error);
+      alert('Failed to generate system prompt. Please try again.');
+    } finally {
+      setIsGeneratingSystemPrompt(false);
+    }
+  };
+
+  const generateBackstory = async () => {
+    setIsGeneratingBackstory(true);
+    try {
+      const response = await fetch('/api/generate-backstory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterData: formData
+        })
+      });
+
+      if (response.ok) {
+        const generatedBackstory = await response.text();
+        setFormData({
+          ...formData,
+          backstory: generatedBackstory
+        });
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to generate backstory:', errorText);
+        alert('Failed to generate backstory. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating backstory:', error);
+      alert('Failed to generate backstory. Please try again.');
+    } finally {
+      setIsGeneratingBackstory(false);
     }
   };
 
@@ -309,9 +371,34 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
 
         {/* System Prompt */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Character AI Prompt *
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Character AI Prompt *
+            </label>
+            <button
+              type="button"
+              onClick={generateSystemPrompt}
+              disabled={isGeneratingSystemPrompt || !formData.name}
+              className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGeneratingSystemPrompt ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-700" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Generate with AI
+                </>
+              )}
+            </button>
+          </div>
           <textarea
             required
             rows={4}
@@ -321,15 +408,40 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
             placeholder="Define how this character should respond and behave in conversations..."
           />
           <p className="text-xs text-gray-500 mt-1">
-            This prompt will determine how the AI responds when chatting as this character.
+            This prompt will determine how the AI responds when chatting as this character. Must begin with "You are [Character Name],"
           </p>
         </div>
 
         {/* Backstory */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Backstory
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Backstory
+            </label>
+            <button
+              type="button"
+              onClick={generateBackstory}
+              disabled={isGeneratingBackstory || !formData.name}
+              className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGeneratingBackstory ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-700" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Generate with AI
+                </>
+              )}
+            </button>
+          </div>
           <textarea
             rows={4}
             value={formData.backstory}
@@ -337,6 +449,11 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             placeholder="Tell the story of your hero's background and history"
           />
+          {!formData.name && (
+            <p className="text-xs text-gray-500 mt-1">
+              Enter a character name to enable AI backstory generation
+            </p>
+          )}
         </div>
 
         {/* Personality Traits */}
