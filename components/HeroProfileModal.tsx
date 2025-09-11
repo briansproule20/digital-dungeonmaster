@@ -158,10 +158,14 @@ export default function HeroProfileModal({ isOpen, onClose, hero }: HeroProfileM
         }
       };
       
-      imgNoCors.src = hero.avatar_url;
+      if (hero.avatar_url) {
+        imgNoCors.src = hero.avatar_url;
+      }
     };
 
-    img.src = hero.avatar_url;
+    if (hero.avatar_url) {
+      img.src = hero.avatar_url;
+    }
   }, [hero.avatar_url, isOpen]);
 
   if (!isOpen) return null;
