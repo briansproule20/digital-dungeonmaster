@@ -57,25 +57,6 @@ export const Home = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="bg-white shadow-sm border-b py-4">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/dungeonmaster-favicon.png" 
-              alt="Digital Dungeonmaster Logo" 
-              className="w-12 h-12"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Digital Dungeonmaster
-              </h1>
-              <p className="text-sm text-gray-600">
-                Your AI-powered tabletop RPG companion
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
       <div className="flex-1 p-4">
         <Chat />
       </div>
