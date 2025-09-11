@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEcho } from '../../echo';
 import { Hero } from '../../lib/supabase';
 
 export default function Campaigns() {
+  const router = useRouter();
   const echoClient = useEcho();
   const [user, setUser] = useState<any>(null);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
@@ -117,7 +119,10 @@ export default function Campaigns() {
         <div className="flex items-center justify-center mt-20">
           <div className="flex items-center gap-16">
             {/* Beginner - Green Circle */}
-            <button className="group relative w-48 h-48 bg-green-600 hover:bg-green-700 rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+            <button 
+              onClick={() => router.push('/campaigns/beginner')}
+              className="group relative w-48 h-48 bg-green-600 hover:bg-green-700 rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            >
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Beginner</div>
@@ -127,7 +132,10 @@ export default function Campaigns() {
             </button>
             
             {/* Intermediate - Blue Square */}
-            <button className="group relative w-48 h-48 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+            <button 
+              onClick={() => router.push('/campaigns/intermediate')}
+              className="group relative w-48 h-48 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            >
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Intermediate</div>
@@ -137,7 +145,10 @@ export default function Campaigns() {
             </button>
             
             {/* Advanced - Black Diamond */}
-            <button className="group relative w-48 h-48 bg-gray-900 hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl transform rotate-45">
+            <button 
+              onClick={() => router.push('/campaigns/advanced')}
+              className="group relative w-48 h-48 bg-gray-900 hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl transform rotate-45"
+            >
               <div className="absolute inset-0 flex items-center justify-center transform -rotate-45">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Advanced</div>
