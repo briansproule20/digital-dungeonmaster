@@ -22,7 +22,9 @@ export const useAvatarColors = (avatarUrl?: string): AvatarColors => {
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
+    console.log('Loading image:', avatarUrl);
     img.onload = () => {
+      console.log('Image loaded successfully');
       try {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -95,8 +97,9 @@ export const useAvatarColors = (avatarUrl?: string): AvatarColors => {
       }
     };
 
-    img.onerror = () => {
-      console.error('Failed to load avatar image for color extraction');
+    img.onerror = (error) => {
+      console.error('Failed to load avatar image for color extraction:', error);
+      console.error('Image URL that failed:', avatarUrl);
       setGradientStyle({
         background: 'linear-gradient(to right, #2563eb, #9333ea)'
       });
