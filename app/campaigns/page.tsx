@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEcho } from '../../echo';
 import { Hero } from '../../lib/supabase';
 
 export default function Campaigns() {
   const echoClient = useEcho();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [partyHeroes, setPartyHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -113,17 +113,38 @@ export default function Campaigns() {
           </div>
         </div>
 
-        {/* Campaign Shapes */}
+        {/* Campaign Difficulty Buttons */}
         <div className="flex items-center justify-center mt-20">
-          <div className="flex items-center gap-40">
-            {/* Green Circle */}
-            <div className="w-48 h-48 bg-green-600 rounded-full"></div>
+          <div className="flex items-center gap-16">
+            {/* Beginner - Green Circle */}
+            <button className="group relative w-48 h-48 bg-green-600 hover:bg-green-700 rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-white text-2xl font-bold mb-2">Beginner</div>
+                  <div className="text-green-100 text-sm">Easy Adventures</div>
+                </div>
+              </div>
+            </button>
             
-            {/* Blue Square */}
-            <div className="w-48 h-48 bg-blue-600"></div>
+            {/* Intermediate - Blue Square */}
+            <button className="group relative w-48 h-48 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-white text-2xl font-bold mb-2">Intermediate</div>
+                  <div className="text-blue-100 text-sm">Moderate Challenge</div>
+                </div>
+              </div>
+            </button>
             
-            {/* Black Diamond */}
-            <div className="w-48 h-48 bg-black transform rotate-45"></div>
+            {/* Advanced - Black Diamond */}
+            <button className="group relative w-48 h-48 bg-gray-900 hover:bg-black transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl transform rotate-45">
+              <div className="absolute inset-0 flex items-center justify-center transform -rotate-45">
+                <div className="text-center">
+                  <div className="text-white text-2xl font-bold mb-2">Advanced</div>
+                  <div className="text-gray-300 text-sm">Expert Level</div>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </div>
