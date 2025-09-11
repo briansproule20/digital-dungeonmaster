@@ -1,4 +1,4 @@
-import { openai } from "@/echo";
+import { openai } from "../../../echo";
 import { generateText } from "ai";
 
 export async function POST(req: Request) {
@@ -17,12 +17,29 @@ export async function POST(req: Request) {
   "description": "2-3 sentence character description",
   "backstory": "Detailed backstory paragraph",
   "personality_traits": ["trait1", "trait2", "trait3"],
-  "system_prompt": "How this character should behave in conversations"
+  "system_prompt": "COMPREHENSIVE AI CHARACTER PROMPT - This should be the longest, most detailed section"
 }
 
-Make the character interesting, unique, and well-developed. Use creative combinations of races and classes. Include specific details that make them memorable. The system_prompt should capture their personality and speaking style for AI conversations.`;
+CRITICAL: The system_prompt field must be extremely comprehensive and detailed. It should be 3-4 paragraphs long and include:
 
-        const userPrompt = `Generate a completely random D&D character. Make them unique and interesting with a compelling backstory. Fill out all fields with creative, specific details.`;
+MANDATORY: The system_prompt MUST begin with "You are [Character Name]," - never start with a title or description.
+
+1. CHARACTER IDENTITY: Full name, race, class, level, and alignment context
+2. PERSONALITY & SPEECH: How they talk, their mannerisms, vocabulary, accent, speech patterns
+3. BACKSTORY INTEGRATION: Key life experiences, motivations, fears, goals, relationships
+4. BEHAVIORAL GUIDELINES: How they react to different situations, their moral compass, decision-making style
+5. WORLD CONTEXT: Their place in the D&D world, knowledge level, cultural background
+6. INTERACTION STYLE: How they treat friends vs enemies, authority figures, strangers
+
+The system_prompt should give the AI everything needed to roleplay this character authentically in conversations. Include specific examples of how they might respond to common situations.
+
+Make the character interesting, unique, and well-developed. Use creative combinations of races and classes. The system_prompt is the most important field - make it comprehensive and immersive.`;
+
+        const userPrompt = `Generate a completely random D&D character. Make them unique and interesting with a compelling backstory. Fill out all fields with creative, specific details.
+
+MOST IMPORTANT: The system_prompt field should be the longest and most comprehensive section - 3-4 paragraphs that give the AI complete context about who this character is, how they speak, what motivates them, and how they should behave in conversations. This prompt will be used for AI chat interactions, so include everything needed for authentic roleplay.
+
+CRITICAL FORMAT: The system_prompt MUST start with "You are [Character Name]," - never begin with titles, descriptions, or anything else. Always use second person perspective throughout.`;
 
         const result = await generateText({
             model: openai("gpt-4o"), 
@@ -53,16 +70,16 @@ Make the character interesting, unique, and well-developed. Use creative combina
             
             // Fallback: return a basic character if JSON parsing fails
             const fallbackCharacter = {
-                name: "Mysterious Wanderer",
+                name: "Kael Shadowstep",
                 class: "Rogue",
                 race: "Human",
-                level: 1,
+                level: 3,
                 alignment: "Chaotic Neutral",
-                appearance: "A hooded figure with weathered hands and keen eyes",
-                description: "A mysterious traveler who keeps their past hidden behind a charming smile and quick wit.",
-                backstory: "Once a merchant's child, they turned to adventure after their family's caravan was attacked by bandits. Now they wander the roads, seeking both fortune and the truth about that fateful night.",
-                personality_traits: ["Curious", "Cautious", "Quick-witted"],
-                system_prompt: "You are a mysterious but friendly rogue who speaks with wit and charm. You're cautious about revealing personal details but enjoy clever banter and helping others with their problems."
+                appearance: "A hooded figure with weathered hands and keen eyes, wearing dark leather armor with hidden daggers",
+                description: "A mysterious traveler who keeps their past hidden behind a charming smile and quick wit, always watching the shadows.",
+                backstory: "Once the child of a wealthy merchant family, Kael's life changed when bandits attacked their caravan. After escaping and living on the streets, they learned the arts of stealth and survival. Now they wander between cities, seeking both fortune and clues about the bandits who destroyed their old life.",
+                personality_traits: ["Cautiously curious", "Quick-witted", "Secretly compassionate"],
+                system_prompt: "You are Kael Shadowstep, a 3rd-level Human Rogue with a Chaotic Neutral alignment. You grew up in a merchant family but lost everything to bandits, forcing you to survive on the streets where you learned stealth, lockpicking, and the art of reading people. You speak with wit and charm, often using humor to deflect serious questions about your past. You're naturally curious but cautious, always assessing threats and opportunities. Your speech is clever and sometimes sarcastic, peppered with street slang and merchant terminology from your upbringing. You're secretly compassionate, especially toward other outcasts and those who've lost family, though you hide this behind a roguish exterior. You're motivated by both survival and a deep desire to find the bandits who killed your family. You trust slowly but once earned, your loyalty runs deep. In conversations, you tend to deflect personal questions with jokes, ask probing questions about others, and offer practical advice drawn from street experience. You're comfortable with morally gray situations and believe the ends often justify the means. You respect competence over authority and are always looking for the angle or opportunity in any situation."
             };
 
             return new Response(JSON.stringify(fallbackCharacter), {
