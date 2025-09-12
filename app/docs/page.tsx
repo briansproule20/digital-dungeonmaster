@@ -1,12 +1,84 @@
+'use client';
+
+import React, { useState } from 'react';
+
 export default function Docs() {
+  const [activeSection, setActiveSection] = useState('what-is-dnd');
+
+  const sections = [
+    { id: 'what-is-dnd', title: 'What is D&D?' },
+    { id: 'core-concepts', title: 'Core Concepts' },
+    { id: 'character-basics', title: 'Character Basics' },
+    { id: 'dnd-classes', title: 'D&D Classes' },
+    { id: 'dice-system', title: 'The Dice System' },
+    { id: 'types-of-rolls', title: 'Types of Rolls' },
+    { id: 'combat-basics', title: 'Combat Basics' },
+  ];
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const sectionElements = sections.map(section => ({
+        id: section.id,
+        element: document.getElementById(section.id)
+      })).filter(item => item.element);
+
+      let currentSection = sections[0].id;
+      
+      for (const { id, element } of sectionElements) {
+        const rect = element!.getBoundingClientRect();
+        if (rect.top <= 100) { // 100px offset for better UX
+          currentSection = id;
+        }
+      }
+      
+      setActiveSection(currentSection);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Set initial active section
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [sections]);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <article className="bg-white rounded-lg shadow-sm border p-8 prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black prose-strong:text-black">
+      <div className="max-w-6xl mx-auto px-4 flex gap-8">
+        {/* Sidebar */}
+        <aside className="w-64 flex-shrink-0">
+          <div className="sticky top-8 bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Contents</h3>
+            <nav className="space-y-2">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                    activeSection === section.id
+                      ? 'bg-blue-50 text-blue-700 font-medium'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {section.title}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1">
+          <article className="bg-white rounded-lg shadow-sm border p-8 prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black prose-strong:text-black">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Dungeons & Dragons 5th Edition: Beginner's Guide</h1>
           <p className="text-xl text-gray-600 italic mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
+          <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
           <p className="text-gray-700 leading-relaxed mb-6">
             Dungeons & Dragons is a tabletop roleplaying game where you and your friends create characters and embark on adventures in a fantasy world. One player acts as the <strong>Dungeon Master (DM)</strong> who describes the world and controls the story, while the other players control <strong>Player Characters (PCs)</strong> who are the heroes of the tale.
           </p>
@@ -14,11 +86,11 @@ export default function Docs() {
             Think of it like collaborative storytelling with dice to add excitement and uncertainty!
           </p>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Core Concepts</h2>
+          <h2 id="core-concepts" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Core Concepts</h2>
           
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The Golden Rule</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
-            The DM has final say on all rules interpretations. D&D is about having fun together, so rules can be bent or changed to serve the story.
+            The DM has final say on all rules interpretations. D&D is about having fun together, so rules can be bent or changed to serve the story. <strong>Remember, in this gamemode you're the dungeonmaster, so you have final say!</strong>
           </p>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The Basic Game Loop</h3>
@@ -30,7 +102,7 @@ export default function Docs() {
             <li><strong>DM describes what happens next</strong> - The story continues!</li>
           </ol>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Character Basics</h2>
+          <h2 id="character-basics" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Character Basics</h2>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The Six Ability Scores</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
@@ -77,27 +149,118 @@ export default function Docs() {
             <li><strong>Levels 17-20:</strong> +6</li>
           </ul>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">The Dice System</h2>
+          <h2 id="dnd-classes" className="text-2xl font-bold text-gray-900 mt-8 mb-4">D&D Classes</h2>
+          
+          <p className="text-gray-700 leading-relaxed mb-6">
+            Your class determines what your character can do. Each class has unique abilities, spells, and play styles. Here are the core classes from the Player's Handbook:
+          </p>
 
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Types of Dice</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">D&D uses polyhedral dice, written as "d" + number of sides:</p>
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-semibold text-red-800 mb-2">Fighter</h4>
+                <p className="text-sm text-red-700">Master of weapons and armor. Versatile warrior with many combat options.</p>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-2">Wizard</h4>
+                <p className="text-sm text-blue-700">Scholarly spellcaster with the largest spell selection. Intelligence-based magic.</p>
+              </div>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">Ranger</h4>
+                <p className="text-sm text-green-700">Nature warrior and tracker. Good with bow, beast companions, and survival.</p>
+              </div>
+              
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="font-semibold text-purple-800 mb-2">Bard</h4>
+                <p className="text-sm text-purple-700">Jack-of-all-trades with music-based magic and social skills.</p>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="font-semibold text-yellow-800 mb-2">Cleric</h4>
+                <p className="text-sm text-yellow-700">Divine spellcaster and healer. Serves a deity with holy magic.</p>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-2">Rogue</h4>
+                <p className="text-sm text-gray-700">Sneaky skill expert. Excels at stealth, locks, traps, and sneak attacks.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-semibold text-orange-800 mb-2">Sorcerer</h4>
+                <p className="text-sm text-orange-700">Innate magic user. Fewer spells than wizards but can modify them.</p>
+              </div>
+              
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <h4 className="font-semibold text-indigo-800 mb-2">Paladin</h4>
+                <p className="text-sm text-indigo-700">Holy warrior with healing magic and divine smite abilities.</p>
+              </div>
+              
+              <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                <h4 className="font-semibold text-pink-800 mb-2">Warlock</h4>
+                <p className="text-sm text-pink-700">Made a pact with otherworldly being. Unique magic with short rests.</p>
+              </div>
+              
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <h4 className="font-semibold text-emerald-800 mb-2">Druid</h4>
+                <p className="text-sm text-emerald-700">Nature magic and wild shape. Can transform into animals.</p>
+              </div>
+              
+              <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
+                <h4 className="font-semibold text-rose-800 mb-2">Barbarian</h4>
+                <p className="text-sm text-rose-700">Primal warrior who enters rage for extra damage and toughness.</p>
+              </div>
+              
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                <h4 className="font-semibold text-teal-800 mb-2">Monk</h4>
+                <p className="text-sm text-teal-700">Martial artist with ki powers. Fast, agile, and can catch arrows.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold text-purple-800 mb-3">Create Your Own!</h3>
+            <p className="text-purple-700 leading-relaxed">
+              <strong>One of the most fun aspects of D&D is creating custom classes!</strong> Work with your DM to design a class that fits your character concept. Maybe you want to be a monster hunter, a time mage, or a chef who fights with kitchen utensils. The rules are guidelines - creativity and fun come first!
+            </p>
+            <p className="text-purple-700 leading-relaxed mt-3">
+              Popular homebrew ideas include: Gunslinger, Blood Hunter, Artificer (now official!), Psion, Death Knight, or even classes based on your favorite fictional characters.
+            </p>
+          </div>
+
+          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Choosing Your First Class</h3>
+          <p className="text-gray-700 leading-relaxed mb-4">For beginners, consider:</p>
           <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>d4</strong> (4 sides) - Small damage</li>
-            <li><strong>d6</strong> (6 sides) - Common damage</li>
-            <li><strong>d8</strong> (8 sides) - Medium damage</li>
-            <li><strong>d10</strong> (10 sides) - Larger damage</li>
-            <li><strong>d12</strong> (12 sides) - Heavy damage</li>
-            <li><strong>d20</strong> (20 sides) - <strong>Most important!</strong> Used for almost all checks</li>
-            <li><strong>d100</strong> (percentile) - Special situations</li>
+            <li><strong>Fighter:</strong> Simple, effective, lots of options as you level</li>
+            <li><strong>Rogue:</strong> Fun skills, sneak attack is satisfying</li>
+            <li><strong>Cleric:</strong> Versatile, can heal, always useful to the party</li>
+            <li><strong>Ranger:</strong> Good mix of combat and utility</li>
           </ul>
 
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The d20 System</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">Most actions use a d20 roll:</p>
+          <h2 id="dice-system" className="text-2xl font-bold text-gray-900 mt-8 mb-4">The d20 System</h2>
+
+          <p className="text-gray-700 leading-relaxed mb-6">
+            In our game, everything revolves around the <strong>20-sided die (d20)</strong>. This single die determines the outcome of all your actions, from sneaking past guards to casting spells to swinging swords.
+          </p>
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-center font-mono text-lg text-black">
               <strong className="text-black">Basic Formula:</strong> d20 + Ability Modifier + Proficiency Bonus (if applicable) ≥ Target Number
             </p>
           </div>
+
+          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">How the d20 Works</h3>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            Roll the d20 and add your relevant modifiers. If your total meets or exceeds the Difficulty Class (DC), you succeed!
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
+            <li><strong>Natural 20:</strong> Rolling a 20 on the die (before modifiers) is always exciting! For attack rolls, it's an automatic hit and deals extra damage.</li>
+            <li><strong>Natural 1:</strong> Rolling a 1 on the die (before modifiers) is an automatic miss for attack rolls and often means something goes wrong.</li>
+            <li><strong>Modifiers matter:</strong> A skilled character (high ability + proficiency) can succeed on harder tasks than an unskilled one.</li>
+          </ul>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Advantage and Disadvantage</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
@@ -106,7 +269,7 @@ export default function Docs() {
             <li><strong>They cancel out:</strong> If you have both, roll normally</li>
           </ul>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Types of Rolls</h2>
+          <h2 id="types-of-rolls" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Types of Rolls</h2>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Ability Checks</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
@@ -146,7 +309,7 @@ export default function Docs() {
             <li><strong>Charisma</strong> - Maintain sense of self</li>
           </ul>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Combat Basics</h2>
+          <h2 id="combat-basics" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Combat Basics</h2>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Initiative</h3>
           <p className="text-gray-700 leading-relaxed mb-6">
@@ -175,15 +338,15 @@ export default function Docs() {
             <li><strong>Search</strong> - Look for something specific</li>
           </ul>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-8">
-            <h3 className="text-lg font-semibold text-black mb-4">Quick Reference - Difficulty Classes</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm text-black">
-              <div className="flex justify-between"><span>Very Easy:</span><span>DC 5</span></div>
-              <div className="flex justify-between"><span>Easy:</span><span>DC 10</span></div>
-              <div className="flex justify-between"><span>Medium:</span><span>DC 15</span></div>
-              <div className="flex justify-between"><span>Hard:</span><span>DC 20</span></div>
-              <div className="flex justify-between"><span>Very Hard:</span><span>DC 25</span></div>
-              <div className="flex justify-between"><span>Nearly Impossible:</span><span>DC 30</span></div>
+          <div className="bg-gray-50 border rounded-lg p-4 mt-8">
+            <h3 className="font-semibold text-gray-900 mb-3">Difficulty Classes (DC)</h3>
+            <div className="space-y-1 text-sm text-gray-700">
+              <div className="flex justify-between"><span>Very Easy</span><span className="font-mono">DC 5</span></div>
+              <div className="flex justify-between"><span>Easy</span><span className="font-mono">DC 10</span></div>
+              <div className="flex justify-between"><span>Medium</span><span className="font-mono">DC 15</span></div>
+              <div className="flex justify-between"><span>Hard</span><span className="font-mono">DC 20</span></div>
+              <div className="flex justify-between"><span>Very Hard</span><span className="font-mono">DC 25</span></div>
+              <div className="flex justify-between"><span>Nearly Impossible</span><span className="font-mono">DC 30</span></div>
             </div>
           </div>
 
@@ -194,6 +357,7 @@ export default function Docs() {
             </p>
           </div>
         </article>
+        </main>
       </div>
     </div>
   );
