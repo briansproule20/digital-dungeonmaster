@@ -954,6 +954,8 @@ export default function ProofOfConcept() {
   };
 
   const handleAreaHeroResponse = async (hero: Hero, area: string) => {
+    console.log(`DEBUG: handleAreaHeroResponse called with hero: ${hero.name} (${hero.id}) in area: ${area}`);
+    
     const areaStates = {
       'missionBriefing': {
         typing: briefingTyping,
@@ -1007,7 +1009,13 @@ export default function ProofOfConcept() {
       };
 
       const campaignContext = generateCampaignContext();
-      const fullSystemPrompt = hero.system_prompt || `You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
+      
+      console.log(`DEBUG: Generating system prompt for hero: ${hero.name} (${hero.id})`);
+      console.log('DEBUG: Hero data:', hero);
+      
+      const fullSystemPrompt = hero.system_prompt || `CRITICAL: You are ONLY ${hero.name}. You are NOT any other character. You do NOT speak for other characters. You do NOT mention other characters by name unless directly addressing them. You do NOT describe what other characters are doing.
+
+You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
 
 BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
 
@@ -1019,7 +1027,9 @@ You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 
 
 IMPORTANT: The initial informational messages (like mission briefings, area descriptions, etc.) are provided for context only. Do NOT base your character's responses on these informational messages. Instead, respond based on your character's background, personality, and the actual conversations that have taken place. Your character should react and respond according to their own nature, not the informational content.
 
-ROLE CLARIFICATION: You are a PLAYER CHARACTER, not the Dungeon Master. Do NOT list objectives, state mission goals, or brief other characters about what needs to be done. Do NOT act like you're running the mission or giving orders. The user (player) is the DM and controls the narrative. You should react as a character would - with personal thoughts, feelings, concerns, and suggestions based on your expertise. Stay in character as a player, not as someone managing the mission.${campaignContext}`;
+ROLE CLARIFICATION: You are a PLAYER CHARACTER, not the Dungeon Master. Do NOT list objectives, state mission goals, or brief other characters about what needs to be done. Do NOT act like you're running the mission or giving orders. The user (player) is the DM and controls the narrative. You should react as a character would - with personal thoughts, feelings, concerns, and suggestions based on your expertise. Stay in character as a player, not as someone managing the mission.
+
+CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other characters. Do NOT mention other characters' names or actions unless directly addressing them in conversation. Respond only as yourself - ${hero.name}.${campaignContext}`;
 
       console.log('Full system prompt being sent:', fullSystemPrompt);
 
