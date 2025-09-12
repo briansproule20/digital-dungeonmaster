@@ -12,6 +12,11 @@ interface Hero {
   level?: number;
   avatar_url?: string;
   system_prompt?: string;
+  alignment?: string;
+  appearance?: string;
+  backstory?: string;
+  personality_traits?: string[];
+  description?: string;
 }
  
 const initialNodes: Node[] = [
@@ -380,7 +385,15 @@ export default function ProofOfConcept() {
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.speaker ? `${msg.speaker}: ${msg.text}` : msg.text
           })),
-          heroSystemPrompt: hero.system_prompt || `You are ${hero.name}, a ${hero.race} ${hero.class}. You're listening to a mission briefing about investigating a mysterious silent research vessel. Respond in character with your thoughts, concerns, or questions about the mission. Keep it engaging but concise (2-3 sentences max).`
+          heroSystemPrompt: hero.system_prompt || `You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
+
+BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
+
+PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
+
+APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
+
+You are a PLAYER CHARACTER listening to a mission briefing about investigating a mysterious silent research vessel. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions about the mission. Take initiative - propose ideas, voice concerns, or suggest preparations based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Keep responses engaging but concise (2-3 sentences max).`
         })
       });
 
@@ -556,7 +569,13 @@ export default function ProofOfConcept() {
               role: msg.sender === 'user' ? 'user' : 'assistant',
               content: msg.text
             })).concat([{ role: 'user', content: message }]),
-            heroSystemPrompt: currentSpeaker.system_prompt || `You are ${currentSpeaker.name}. ${currentSpeaker.id === 'mission-control' ? 'You are Mission Control leading this briefing.' : `You are a ${currentSpeaker.race} ${currentSpeaker.class} on this mission.`} Respond in character. Keep responses engaging but concise.`
+            heroSystemPrompt: currentSpeaker.system_prompt || `You are ${currentSpeaker.name}${currentSpeaker.id === 'mission-control' ? ', Mission Control leading this briefing. Provide dramatic, immersive mission updates and respond to the crew\'s concerns with authority and tactical knowledge.' : `, a ${currentSpeaker.race} ${currentSpeaker.class}${currentSpeaker.alignment ? ` (${currentSpeaker.alignment})` : ''}.
+
+BACKGROUND: ${currentSpeaker.backstory || 'You are an experienced adventurer.'}
+
+PERSONALITY: ${currentSpeaker.personality_traits ? currentSpeaker.personality_traits.join(', ') : 'You are brave and determined.'} ${currentSpeaker.description || ''}
+
+You are a PLAYER CHARACTER in this mission briefing. Based on your background and personality, contribute to the discussion with tactical insights, concerns, or suggestions. Take initiative and make decisions based on your expertise. Do NOT ask what to do - you are the character acting.`} Keep responses engaging but concise (2-3 sentences max).`
           })
         });
 
@@ -603,7 +622,15 @@ export default function ProofOfConcept() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages,
-            heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'} on a dangerous space mission. You are brave, helpful, and ready for adventure. Respond in character with personality and emotion. Keep responses concise but engaging.`
+            heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'}${hero?.alignment ? ` (${hero?.alignment})` : ''} on a dangerous space mission.
+
+BACKGROUND: ${hero?.backstory || 'You are an experienced adventurer ready for any challenge.'}
+
+PERSONALITY: ${hero?.personality_traits ? hero.personality_traits.join(', ') : 'You are brave, helpful, and determined.'} ${hero?.description || ''}
+
+APPEARANCE: ${hero?.appearance || 'You have a distinctive appearance that matches your adventuring background.'}
+
+You are a PLAYER CHARACTER. Respond in character with personality and emotion based on your background and traits. Take initiative, make suggestions, and act according to your character's expertise and personality. Do NOT ask the user what to do - you are the character making decisions and taking action. Keep responses concise but engaging.`
           })
         });
 
