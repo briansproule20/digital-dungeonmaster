@@ -8,35 +8,35 @@ const initialNodes: Node[] = [
   { 
     id: 'node1', 
     position: { x: 400, y: 50 }, 
-    data: { label: 'Node 1' },
+    data: { label: 'Mission Briefing' },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
     draggable: false
   },
   { 
     id: 'node2', 
     position: { x: 200, y: 200 }, 
-    data: { label: 'Node 2' },
+    data: { label: 'Medical Bay' },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
     draggable: false
   },
   { 
     id: 'node3', 
     position: { x: 600, y: 200 }, 
-    data: { label: 'Node 3' },
+    data: { label: 'Armory' },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
     draggable: false
   },
   { 
     id: 'node4', 
     position: { x: 400, y: 350 }, 
-    data: { label: 'Node 4' },
+    data: { label: "Captain's Quarters" },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
     draggable: false
   },
   { 
     id: 'node5', 
     position: { x: 400, y: 500 }, 
-    data: { label: 'Node 5' },
+    data: { label: 'Boss Battle' },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
     draggable: false
   },
@@ -121,6 +121,50 @@ function CustomControls() {
     </div>
   );
 }
+
+function DiceRoller() {
+  const [diceValue, setDiceValue] = useState<number | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+
+  const rollDice = () => {
+    setIsRolling(true);
+    setTimeout(() => {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      setDiceValue(roll);
+      setIsRolling(false);
+    }, 300);
+  };
+
+  return (
+    <div 
+      onClick={rollDice}
+      style={{
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
+        width: '56px',
+        height: '56px',
+        background: 'linear-gradient(145deg, #f0f0f0, #d0d0d0)',
+        border: '2px solid #888',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#333',
+        zIndex: 1000,
+        boxShadow: '0 4px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
+        transform: isRolling ? 'rotate(360deg) scale(1.1)' : 'rotate(0deg) scale(1)',
+        transition: 'transform 0.3s ease-in-out',
+        textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+      }}
+    >
+      {isRolling ? '...' : (diceValue || 'D20')}
+    </div>
+  );
+}
  
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -151,6 +195,7 @@ export default function ProofOfConcept() {
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
+        <DiceRoller />
       </ReactFlow>
     </div>
   );
