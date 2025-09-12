@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -175,7 +175,7 @@ function DiceRoller() {
   );
 }
 
-function PartyAvatars() {
+function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }) {
   const [userParty, setUserParty] = useState<Hero[]>([]);
 
   useEffect(() => {
@@ -204,6 +204,7 @@ function PartyAvatars() {
       {userParty.map((hero, index) => (
         <div
           key={hero.id}
+          onClick={() => onAvatarClick(hero)}
           style={{
             width: '40px',
             height: '40px',
@@ -214,8 +215,12 @@ function PartyAvatars() {
             backgroundColor: '#f3f4f6',
             marginLeft: index > 0 ? '-8px' : '0',
             position: 'relative',
-            zIndex: userParty.length - index
+            zIndex: userParty.length - index,
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease'
           }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           {hero.avatar_url ? (
             <img
@@ -247,10 +252,20 @@ function PartyAvatars() {
   );
 }
  
+interface ChatBox {
+  id: string;
+  hero: Hero;
+  position: { x: number; y: number };
+  messages: { sender: 'user' | 'hero'; text: string }[];
+  isDragging: boolean;
+}
+
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [chatBoxes, setChatBoxes] = useState<ChatBox[]>([]);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const nodeInfo: Record<string, { title: string; description: string; content: string }> = {
     'node1': {
@@ -283,6 +298,133 @@ export default function ProofOfConcept() {
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   };
+
+  const onAvatarClick = (hero: Hero) => {
+    const existingChatBox = chatBoxes.find(box => box.hero.id === hero.id);
+    if (!existingChatBox) {
+      const newChatBox: ChatBox = {
+        id: hero.id,
+        hero,
+        position: { 
+          x: 100 + chatBoxes.length * 50, 
+          y: 100 + chatBoxes.length * 50 
+        },
+        messages: [
+          { sender: 'hero', text: `Greetings! I'm ${hero.name}. How can I assist you on this mission?` }
+        ],
+        isDragging: false
+      };
+      setChatBoxes(prev => [...prev, newChatBox]);
+    }
+  };
+
+  const closeChatBox = (heroId: string) => {
+    setChatBoxes(prev => prev.filter(box => box.hero.id !== heroId));
+  };
+
+  const sendMessage = async (heroId: string, message: string) => {
+    if (!message.trim()) return;
+    
+    // Add user message immediately
+    setChatBoxes(prev => prev.map(box => 
+      box.hero.id === heroId 
+        ? {
+            ...box,
+            messages: [...box.messages, { sender: 'user', text: message }]
+          }
+        : box
+    ));
+
+    // Add typing indicator
+    setChatBoxes(prev => prev.map(box => 
+      box.hero.id === heroId 
+        ? {
+            ...box,
+            messages: [...box.messages, { sender: 'hero', text: '...' }]
+          }
+        : box
+    ));
+
+    try {
+      const hero = chatBoxes.find(box => box.hero.id === heroId)?.hero;
+      const chatHistory = chatBoxes.find(box => box.hero.id === heroId)?.messages || [];
+      
+      // Convert chat history to API format
+      const messages = chatHistory
+        .filter(msg => msg.text !== '...') // Exclude typing indicator
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }))
+        .concat([{ role: 'user', content: message }]);
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'} on a dangerous space mission. You are brave, helpful, and ready for adventure. Respond in character with personality and emotion. Keep responses concise but engaging.`
+        })
+      });
+
+      const responseText = await response.text();
+      
+      // Replace typing indicator with actual response
+      setChatBoxes(prev => prev.map(box => 
+        box.hero.id === heroId 
+          ? {
+              ...box,
+              messages: box.messages.slice(0, -1).concat({ sender: 'hero', text: responseText || 'I apologize, but I cannot respond right now.' })
+            }
+          : box
+      ));
+    } catch (error) {
+      console.error('Chat error:', error);
+      // Replace typing indicator with error message
+      setChatBoxes(prev => prev.map(box => 
+        box.hero.id === heroId 
+          ? {
+              ...box,
+              messages: box.messages.slice(0, -1).concat({ sender: 'hero', text: 'Sorry, I seem to be having trouble responding right now.' })
+            }
+          : box
+      ));
+    }
+  };
+
+  const startDragging = (heroId: string, event: React.MouseEvent) => {
+    const chatBox = chatBoxes.find(box => box.hero.id === heroId);
+    if (chatBox) {
+      setDragOffset({
+        x: event.clientX - chatBox.position.x,
+        y: event.clientY - chatBox.position.y
+      });
+      setChatBoxes(prev => prev.map(box =>
+        box.hero.id === heroId ? { ...box, isDragging: true } : box
+      ));
+    }
+  };
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    const draggingBox = chatBoxes.find(box => box.isDragging);
+    if (draggingBox) {
+      setChatBoxes(prev => prev.map(box =>
+        box.isDragging
+          ? {
+              ...box,
+              position: {
+                x: event.clientX - dragOffset.x,
+                y: event.clientY - dragOffset.y
+              }
+            }
+          : box
+      ));
+    }
+  };
+
+  const stopDragging = () => {
+    setChatBoxes(prev => prev.map(box => ({ ...box, isDragging: false })));
+  };
  
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -298,7 +440,11 @@ export default function ProofOfConcept() {
   );
  
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div 
+      style={{ width: '100vw', height: '100vh', position: 'relative' }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={stopDragging}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -311,8 +457,19 @@ export default function ProofOfConcept() {
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
         <DiceRoller />
-        <PartyAvatars />
+        <PartyAvatars onAvatarClick={onAvatarClick} />
       </ReactFlow>
+
+      {/* Chat Boxes */}
+      {chatBoxes.map((chatBox) => (
+        <ChatBoxComponent
+          key={chatBox.hero.id}
+          chatBox={chatBox}
+          onClose={() => closeChatBox(chatBox.hero.id)}
+          onSendMessage={(message) => sendMessage(chatBox.hero.id, message)}
+          onStartDrag={(event) => startDragging(chatBox.hero.id, event)}
+        />
+      ))}
 
       {/* Node Info Modal */}
       {selectedNode && nodeInfo[selectedNode.id] && (
@@ -325,7 +482,7 @@ export default function ProofOfConcept() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '16px',
-            zIndex: 2000
+            zIndex: 100
           }}
           onClick={() => setSelectedNode(null)}
         >
@@ -394,6 +551,168 @@ export default function ProofOfConcept() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ChatBoxComponent({ 
+  chatBox, 
+  onClose, 
+  onSendMessage, 
+  onStartDrag 
+}: {
+  chatBox: ChatBox;
+  onClose: () => void;
+  onSendMessage: (message: string) => void;
+  onStartDrag: (event: React.MouseEvent) => void;
+}) {
+  const [inputValue, setInputValue] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatBox.messages]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSendMessage(inputValue);
+    setInputValue('');
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: chatBox.position.x,
+        top: chatBox.position.y,
+        width: '300px',
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+        border: '1px solid #e5e7eb',
+        zIndex: 50,
+        cursor: chatBox.isDragging ? 'grabbing' : 'default'
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'grab',
+          backgroundColor: '#f9fafb',
+          borderRadius: '12px 12px 0 0'
+        }}
+        onMouseDown={onStartDrag}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {chatBox.hero.avatar_url && (
+            <img
+              src={chatBox.hero.avatar_url}
+              alt={chatBox.hero.name}
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                objectFit: 'cover'
+              }}
+            />
+          )}
+          <span style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+            {chatBox.hero.name}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '16px',
+            color: '#9ca3af',
+            cursor: 'pointer',
+            padding: '0',
+            width: '20px',
+            height: '20px'
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div style={{
+        height: '200px',
+        overflowY: 'auto',
+        padding: '12px'
+      }}>
+        {chatBox.messages.map((message, index) => (
+          <div
+            key={index}
+            style={{
+              marginBottom: '8px',
+              display: 'flex',
+              justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '80%',
+                padding: '8px 12px',
+                borderRadius: '12px',
+                fontSize: '13px',
+                backgroundColor: message.sender === 'user' ? '#e5e7eb' : '#f3f4f6',
+                color: message.sender === 'user' ? '#374151' : '#374151'
+              }}
+            >
+              {message.text}
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <form onSubmit={handleSubmit} style={{ padding: '12px', borderTop: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder={`Talk to ${chatBox.hero.name}...`}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              fontSize: '13px',
+              outline: 'none',
+              color: '#374151'
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim()}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: inputValue.trim() ? '#3b82f6' : '#d1d5db',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              cursor: inputValue.trim() ? 'pointer' : 'not-allowed'
+            }}
+          >
+            Send
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
