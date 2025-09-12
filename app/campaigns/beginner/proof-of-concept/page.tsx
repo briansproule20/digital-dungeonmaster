@@ -484,7 +484,7 @@ export default function ProofOfConcept() {
     allAreas.forEach(area => {
       if (area.messages.length > 0) {
         context += `\n**${area.name}:**\n`;
-        area.messages.forEach(msg => {
+        area.messages.forEach((msg: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}) => {
           if (msg.sender === 'user') {
             context += `Player: ${msg.text}\n`;
           } else if (msg.sender === 'hero' && msg.speaker) {
@@ -525,7 +525,7 @@ export default function ProofOfConcept() {
         });
         
         // Add all messages from this area
-        area.messages.forEach(msg => {
+        area.messages.forEach((msg: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}) => {
           if (msg.sender === 'user') {
             campaignMessages.push({
               role: 'user',
