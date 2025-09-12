@@ -348,12 +348,12 @@ export default function ProofOfConcept() {
       const savedParty = localStorage.getItem('myParty');
       if (savedParty) {
         try {
-          const party = JSON.parse(savedParty);
+          const party: Hero[] = JSON.parse(savedParty);
           setBriefingParty(party);
           setBriefingMessages([
             {
               sender: 'hero',
-              text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map(h => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
+              text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
               id: Date.now().toString(),
               speaker: 'Mission Control'
             }
@@ -463,7 +463,7 @@ You are a PLAYER CHARACTER listening to a mission briefing about investigating a
         id: 'mission-control', 
         name: 'Mission Control', 
         avatar_url: '', 
-        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map(h => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive.` 
+        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map((h: Hero) => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive.` 
       } as Hero,
       ...heroes
     ];
@@ -475,7 +475,7 @@ You are a PLAYER CHARACTER listening to a mission briefing about investigating a
       messages: [
         { 
           sender: 'hero', 
-          text: `*Mission Control crackles to life*\n\n**Mission Control:** Welcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent, and you're our only hope of discovering what happened. Your crew consists of: ${heroes.map(h => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nWhat are your questions before we begin?`, 
+          text: `*Mission Control crackles to life*\n\n**Mission Control:** Welcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent, and you're our only hope of discovering what happened. Your crew consists of: ${heroes.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nWhat are your questions before we begin?`, 
           id: Date.now().toString() 
         }
       ],
