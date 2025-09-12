@@ -250,6 +250,39 @@ function PartyAvatars() {
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+
+  const nodeInfo: Record<string, { title: string; description: string; content: string }> = {
+    'node1': {
+      title: 'Mission Briefing',
+      description: 'Receive your orders and understand the mission parameters',
+      content: 'You awaken aboard a mysterious starship. The AI system briefs you on an urgent mission - the ship\'s captain has gone missing and strange readings are coming from various sections of the vessel.'
+    },
+    'node2': {
+      title: 'Medical Bay',
+      description: 'Investigate the ship\'s medical facilities',
+      content: 'The medical bay shows signs of recent activity. Medical scanners reveal traces of an unknown substance. You discover healing supplies and clues about what happened to the crew.'
+    },
+    'node3': {
+      title: 'Armory',
+      description: 'Explore the weapons and equipment storage',
+      content: 'The armory has been partially ransacked. Some weapons are missing, but you find advanced equipment that will aid in your mission. Security logs show unauthorized access.'
+    },
+    'node4': {
+      title: 'Captain\'s Quarters',
+      description: 'Search the captain\'s private chambers',
+      content: 'The captain\'s quarters hold the key to understanding what happened. Personal logs, encrypted files, and a hidden passage reveal the truth about the ship\'s predicament.'
+    },
+    'node5': {
+      title: 'Boss Battle',
+      description: 'Face the ultimate challenge',
+      content: 'All paths lead to this final confrontation. Use everything you\'ve learned and collected to overcome the threat that has taken control of the ship.'
+    }
+  };
+
+  const onNodeClick = (event: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+  };
  
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -272,6 +305,7 @@ export default function ProofOfConcept() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
         fitView
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
@@ -279,6 +313,87 @@ export default function ProofOfConcept() {
         <DiceRoller />
         <PartyAvatars />
       </ReactFlow>
+
+      {/* Node Info Modal */}
+      {selectedNode && nodeInfo[selectedNode.id] && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            zIndex: 2000
+          }}
+          onClick={() => setSelectedNode(null)}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#111827',
+                margin: 0
+              }}>
+                {nodeInfo[selectedNode.id].title}
+              </h2>
+              <button
+                onClick={() => setSelectedNode(null)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div style={{ padding: '24px' }}>
+              <p style={{
+                fontSize: '16px',
+                color: '#4b5563',
+                marginBottom: '16px',
+                fontWeight: '500'
+              }}>
+                {nodeInfo[selectedNode.id].description}
+              </p>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                lineHeight: '1.6',
+                margin: 0
+              }}>
+                {nodeInfo[selectedNode.id].content}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
