@@ -1015,7 +1015,9 @@ PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'Y
 
 APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
 
-You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. Keep responses engaging but concise (2-3 sentences max).${campaignContext}`;
+You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. Keep responses engaging but concise (2-3 sentences max).
+
+IMPORTANT: The initial informational messages (like mission briefings, area descriptions, etc.) are provided for context only. Do NOT base your character's responses on these informational messages. Instead, respond based on your character's background, personality, and the actual conversations that have taken place. Your character should react and respond according to their own nature, not the informational content.${campaignContext}`;
 
       console.log('Full system prompt being sent:', fullSystemPrompt);
 
