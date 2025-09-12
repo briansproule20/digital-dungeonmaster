@@ -11,6 +11,7 @@ interface Hero {
   race?: string;
   level?: number;
   avatar_url?: string;
+  system_prompt?: string;
 }
  
 const initialNodes: Node[] = [
@@ -110,7 +111,10 @@ function CustomControls() {
         −
       </button>
       <button
-        onClick={() => fitView()}
+        onClick={() => {
+          fitView({ padding: 0.3 });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         style={{
           width: '24px',
           height: '24px',
@@ -441,7 +445,7 @@ export default function ProofOfConcept() {
  
   return (
     <div 
-      style={{ width: '100vw', height: '100vh', position: 'relative' }}
+      style={{ width: '100vw', height: '100vh', position: 'relative', pointerEvents: 'none' }}
       onMouseMove={handleMouseMove}
       onMouseUp={stopDragging}
     >
@@ -453,6 +457,8 @@ export default function ProofOfConcept() {
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         fitView
+        defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
+        style={{ pointerEvents: 'auto' }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
@@ -482,7 +488,8 @@ export default function ProofOfConcept() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '16px',
-            zIndex: 100
+            zIndex: 100,
+            pointerEvents: 'auto'
           }}
           onClick={() => setSelectedNode(null)}
         >
@@ -595,7 +602,8 @@ function ChatBoxComponent({
         boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
         border: '1px solid #e5e7eb',
         zIndex: 50,
-        cursor: chatBox.isDragging ? 'grabbing' : 'default'
+        cursor: chatBox.isDragging ? 'grabbing' : 'default',
+        pointerEvents: 'auto'
       }}
     >
       {/* Header */}
