@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import ReactMarkdown from 'react-markdown';
 
 interface Hero {
   id: string;
@@ -386,6 +387,89 @@ export default function ProofOfConcept() {
       setMissionBriefingOpen(false);
       setSelectedNode(null);
     }
+  };
+
+  // Markdown renderer component for chat messages
+  const MarkdownMessage = ({ content, isUser }: { content: string; isUser: boolean }) => {
+    return (
+      <ReactMarkdown
+        components={{
+          // Style bold text
+          strong: ({ children }) => (
+            <strong style={{ fontWeight: 'bold', color: isUser ? '#ffffff' : '#1e293b' }}>
+              {children}
+            </strong>
+          ),
+          // Style italic text
+          em: ({ children }) => (
+            <em style={{ fontStyle: 'italic' }}>
+              {children}
+            </em>
+          ),
+          // Style inline code
+          code: ({ children }) => (
+            <code style={{
+              backgroundColor: isUser ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
+              padding: '2px 4px',
+              borderRadius: '3px',
+              fontSize: '0.9em',
+              fontFamily: 'monospace'
+            }}>
+              {children}
+            </code>
+          ),
+          // Style code blocks
+          pre: ({ children }) => (
+            <pre style={{
+              backgroundColor: isUser ? 'rgba(255,255,255,0.1)' : '#f1f5f9',
+              padding: '8px',
+              borderRadius: '4px',
+              overflow: 'auto',
+              fontSize: '0.9em',
+              fontFamily: 'monospace',
+              margin: '8px 0'
+            }}>
+              {children}
+            </pre>
+          ),
+          // Style paragraphs
+          p: ({ children }) => (
+            <p style={{ margin: '4px 0', lineHeight: '1.5' }}>
+              {children}
+            </p>
+          ),
+          // Style lists
+          ul: ({ children }) => (
+            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => (
+            <li style={{ margin: '2px 0', lineHeight: '1.4' }}>
+              {children}
+            </li>
+          ),
+          // Style blockquotes
+          blockquote: ({ children }) => (
+            <blockquote style={{
+              borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.3)' : '#cbd5e1'}`,
+              paddingLeft: '12px',
+              margin: '8px 0',
+              fontStyle: 'italic'
+            }}>
+              {children}
+            </blockquote>
+          )
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   // Auto-scroll to bottom when briefing messages change or when typing
@@ -1170,9 +1254,10 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                         {message.speaker}
                       </div>
                     )}
-                    <div style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>
-                      {message.text}
-                    </div>
+                    <MarkdownMessage 
+                      content={message.text} 
+                      isUser={message.sender === 'user'} 
+                    />
                   </div>
                 </div>
               ))}
