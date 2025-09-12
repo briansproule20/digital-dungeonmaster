@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -16,43 +16,52 @@ interface Hero {
  
 const initialNodes: Node[] = [
   { 
+    id: 'instruction-text', 
+    position: { x: 400, y: -100 }, 
+    data: { label: 'Click Mission Briefing to begin' },
+    style: { color: '#9ca3af', fontSize: '14px', fontWeight: '500', backgroundColor: 'transparent', border: 'none' },
+    draggable: false,
+    selectable: false
+  },
+  { 
     id: 'node1', 
     position: { x: 400, y: 50 }, 
     data: { label: 'Mission Briefing' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
   { 
     id: 'node2', 
     position: { x: 200, y: 200 }, 
     data: { label: 'Medical Bay' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
   { 
     id: 'node3', 
     position: { x: 600, y: 200 }, 
     data: { label: 'Armory' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
   { 
     id: 'node4', 
     position: { x: 400, y: 350 }, 
     data: { label: "Captain's Quarters" },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
   { 
     id: 'node5', 
     position: { x: 400, y: 500 }, 
     data: { label: 'Boss Battle' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
 ];
 
 const initialEdges: Edge[] = [
+  { id: 'instruction-line', source: 'instruction-text', target: 'node1' },
   { id: 'node1-node2', source: 'node1', target: 'node2' },
   { id: 'node1-node3', source: 'node1', target: 'node3' },
   { id: 'node2-node4', source: 'node2', target: 'node4' },
@@ -267,6 +276,8 @@ interface ChatBox {
   isLocked: boolean;
   isTyping: boolean;
   streamingContent: string;
+  currentSpeakerIndex?: number;
+  partyMembers?: Hero[];
 }
 
 export default function ProofOfConcept() {
@@ -304,8 +315,152 @@ export default function ProofOfConcept() {
     }
   };
 
+  const [missionBriefingOpen, setMissionBriefingOpen] = useState(false);
+  const [briefingParty, setBriefingParty] = useState<Hero[]>([]);
+  const [briefingMessages, setBriefingMessages] = useState<{sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]>([]);
+  const [briefingTyping, setBriefingTyping] = useState(false);
+  const [briefingInput, setBriefingInput] = useState('');
+  const briefingMessagesEndRef = useRef<HTMLDivElement>(null);
+
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
+    if (node.id === 'node1') { // Mission Briefing
+      // Get user's party from localStorage
+      const savedParty = localStorage.getItem('myParty');
+      if (savedParty) {
+        try {
+          const party = JSON.parse(savedParty);
+          setBriefingParty(party);
+          setBriefingMessages([
+            {
+              sender: 'hero',
+              text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map(h => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
+              id: Date.now().toString(),
+              speaker: 'Mission Control'
+            }
+          ]);
+          setMissionBriefingOpen(true);
+          return;
+        } catch (error) {
+          console.error('Failed to parse saved party:', error);
+        }
+      }
+      // Fallback to regular modal if no party
+      setSelectedNode(node);
+    } else {
+      setSelectedNode(node);
+    }
+  };
+
+  const handleHeroResponse = async (hero: Hero) => {
+    if (briefingTyping) return;
+    
+    setBriefingTyping(true);
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: briefingMessages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.speaker ? `${msg.speaker}: ${msg.text}` : msg.text
+          })),
+          heroSystemPrompt: hero.system_prompt || `You are ${hero.name}, a ${hero.race} ${hero.class}. You're listening to a mission briefing about investigating a mysterious silent research vessel. Respond in character with your thoughts, concerns, or questions about the mission. Keep it engaging but concise (2-3 sentences max).`
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.text();
+        
+        // Stop typing and add empty message for streaming
+        setBriefingTyping(false);
+        const newMessage = {
+          sender: 'hero' as const,
+          text: '',
+          id: Date.now().toString(),
+          speaker: hero.name
+        };
+        setBriefingMessages(prev => [...prev, newMessage]);
+        
+        // Stream the response word by word
+        const words = data.split(' ');
+        let displayedContent = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          displayedContent += (i > 0 ? ' ' : '') + words[i];
+          
+          setBriefingMessages(prev => prev.map(msg => 
+            msg.id === newMessage.id 
+              ? { ...msg, text: displayedContent }
+              : msg
+          ));
+          
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      } else {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Hero response error:', error);
+      const errorMessage = {
+        sender: 'hero' as const,
+        text: 'I seem to be having trouble responding right now.',
+        id: (Date.now()).toString(),
+        speaker: hero.name
+      };
+      setBriefingMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setBriefingTyping(false);
+    }
+  };
+
+  const handleUserMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!briefingInput.trim() || briefingTyping) return;
+    
+    const userMessage = {
+      sender: 'user' as const,
+      text: briefingInput.trim(),
+      id: Date.now().toString()
+    };
+    
+    setBriefingMessages(prev => [...prev, userMessage]);
+    setBriefingInput('');
+  };
+
+  const openGroupChat = (heroes: Hero[]) => {
+    // Create all speakers (Mission Control + party members)
+    const allSpeakers = [
+      { 
+        id: 'mission-control', 
+        name: 'Mission Control', 
+        avatar_url: '', 
+        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map(h => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive.` 
+      } as Hero,
+      ...heroes
+    ];
+
+    const groupChatBox: ChatBox = {
+      id: 'group-chat',
+      hero: allSpeakers[0], // Start with Mission Control
+      position: { x: 100, y: 100 },
+      messages: [
+        { 
+          sender: 'hero', 
+          text: `*Mission Control crackles to life*\n\n**Mission Control:** Welcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent, and you're our only hope of discovering what happened. Your crew consists of: ${heroes.map(h => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nWhat are your questions before we begin?`, 
+          id: Date.now().toString() 
+        }
+      ],
+      isDragging: false,
+      isResizing: false,
+      size: { width: 400, height: 500 },
+      isLocked: false,
+      isTyping: false,
+      streamingContent: '',
+      currentSpeakerIndex: 0,
+      partyMembers: allSpeakers
+    };
+    setChatBoxes(prev => [...prev.filter(box => box.id !== 'group-chat'), groupChatBox]);
   };
 
   const onAvatarClick = (hero: Hero) => {
@@ -358,79 +513,139 @@ export default function ProofOfConcept() {
     ));
 
     try {
-      const hero = chatBoxes.find(box => box.hero.id === heroId)?.hero;
-      const chatHistory = chatBoxes.find(box => box.hero.id === heroId)?.messages || [];
+      const chatBox = chatBoxes.find(box => box.hero.id === heroId);
+      const hero = chatBox?.hero;
+      const chatHistory = chatBox?.messages || [];
       
-      // Convert chat history to API format
-      const messages = chatHistory.map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text
-      })).concat([{ role: 'user', content: message }]);
+      // Special handling for group chat - turn-based
+      if (heroId === 'group-chat') {
+        const currentSpeakerIndex = chatBox?.currentSpeakerIndex || 0;
+        const partyMembers = chatBox?.partyMembers || [];
+        
+        // Get next speaker (cycle through all speakers)
+        const nextSpeakerIndex = (currentSpeakerIndex + 1) % partyMembers.length;
+        const currentSpeaker = partyMembers[nextSpeakerIndex];
+        
+        if (!currentSpeaker) {
+          throw new Error('No current speaker found');
+        }
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages,
-          heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'} on a dangerous space mission. You are brave, helpful, and ready for adventure. Respond in character with personality and emotion. Keep responses concise but engaging.`
-        })
-      });
+        // Generate response for current speaker
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: chatHistory.map(msg => ({
+              role: msg.sender === 'user' ? 'user' : 'assistant',
+              content: msg.text
+            })).concat([{ role: 'user', content: message }]),
+            heroSystemPrompt: currentSpeaker.system_prompt || `You are ${currentSpeaker.name}. ${currentSpeaker.id === 'mission-control' ? 'You are Mission Control leading this briefing.' : `You are a ${currentSpeaker.race} ${currentSpeaker.class} on this mission.`} Respond in character. Keep responses engaging but concise.`
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.text();
-        
-        // Stop typing and start streaming effect
-        setChatBoxes(prev => prev.map(box => 
-          box.hero.id === heroId 
-            ? { ...box, isTyping: false, streamingContent: '' }
-            : box
-        ));
-        
-        // Add empty assistant message
-        const assistantMessage = {
-          sender: 'hero' as const,
-          text: '',
-          id: (Date.now() + 1).toString()
-        };
-        
-        setChatBoxes(prev => prev.map(box => 
-          box.hero.id === heroId 
-            ? { ...box, messages: [...box.messages, assistantMessage] }
-            : box
-        ));
-        
-        // Simulate streaming by showing words gradually
-        const words = data.split(' ');
-        let displayedContent = '';
-        
-        for (let i = 0; i < words.length; i++) {
-          displayedContent += (i > 0 ? ' ' : '') + words[i];
+        if (response.ok) {
+          const data = await response.text();
           
+          // Stop typing
           setChatBoxes(prev => prev.map(box => 
             box.hero.id === heroId 
-              ? {
-                  ...box,
-                  streamingContent: displayedContent,
-                  messages: box.messages.map(msg => 
-                    msg.id === assistantMessage.id 
-                      ? { ...msg, text: displayedContent }
-                      : msg
-                  )
-                }
+              ? { ...box, isTyping: false, streamingContent: '' }
               : box
           ));
           
-          await new Promise(resolve => setTimeout(resolve, 50));
+          // Add response with speaker name
+          const speakerMessage = {
+            sender: 'hero' as const,
+            text: `**${currentSpeaker.name}:** ${data}`,
+            id: (Date.now() + 1).toString()
+          };
+          
+          // Update chat with new message and next speaker
+          setChatBoxes(prev => prev.map(box => 
+            box.hero.id === heroId 
+              ? { 
+                  ...box, 
+                  messages: [...box.messages, speakerMessage],
+                  currentSpeakerIndex: nextSpeakerIndex,
+                  hero: currentSpeaker // Update current speaker for display
+                }
+              : box
+          ));
+        } else {
+          throw new Error(`API call failed: ${response.status}`);
         }
-        
-        // Clear streaming content
-        setChatBoxes(prev => prev.map(box => 
-          box.hero.id === heroId 
-            ? { ...box, streamingContent: '' }
-            : box
-        ));
       } else {
-        throw new Error(`API call failed: ${response.status}`);
+        // Regular single hero chat
+        const messages = chatHistory.map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        })).concat([{ role: 'user', content: message }]);
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages,
+            heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'} on a dangerous space mission. You are brave, helpful, and ready for adventure. Respond in character with personality and emotion. Keep responses concise but engaging.`
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.text();
+          
+          // Stop typing and start streaming effect
+          setChatBoxes(prev => prev.map(box => 
+            box.hero.id === heroId 
+              ? { ...box, isTyping: false, streamingContent: '' }
+              : box
+          ));
+          
+          // Add empty assistant message
+          const assistantMessage = {
+            sender: 'hero' as const,
+            text: '',
+            id: (Date.now() + 1).toString()
+          };
+          
+          setChatBoxes(prev => prev.map(box => 
+            box.hero.id === heroId 
+              ? { ...box, messages: [...box.messages, assistantMessage] }
+              : box
+          ));
+          
+          // Simulate streaming by showing words gradually
+          const words = data.split(' ');
+          let displayedContent = '';
+          
+          for (let i = 0; i < words.length; i++) {
+            displayedContent += (i > 0 ? ' ' : '') + words[i];
+            
+            setChatBoxes(prev => prev.map(box => 
+              box.hero.id === heroId 
+                ? {
+                    ...box,
+                    streamingContent: displayedContent,
+                    messages: box.messages.map(msg => 
+                      msg.id === assistantMessage.id 
+                        ? { ...msg, text: displayedContent }
+                        : msg
+                    )
+                  }
+                : box
+            ));
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          // Clear streaming content
+          setChatBoxes(prev => prev.map(box => 
+            box.hero.id === heroId 
+              ? { ...box, streamingContent: '' }
+              : box
+          ));
+        } else {
+          throw new Error(`API call failed: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -547,16 +762,17 @@ export default function ProofOfConcept() {
         onMouseMove={handleMouseMove}
         onMouseUp={stopDragging}
       >
+        
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
         onNodeClick={onNodeClick}
         fitView
         defaultViewport={{ x: 0, y: 0, zoom: 0.7 }}
         style={{ pointerEvents: 'auto' }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
@@ -658,6 +874,260 @@ export default function ProofOfConcept() {
           </div>
         </div>
       )}
+
+      {/* Mission Briefing Modal */}
+      {missionBriefingOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: 200,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header with Party Avatars */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  margin: '0 0 8px 0'
+                }}>
+                  Mission Briefing
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Your Team:
+                  </span>
+                  {briefingParty.map(hero => (
+                    <button
+                      key={hero.id}
+                      onClick={() => handleHeroResponse(hero)}
+                      disabled={briefingTyping}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: briefingTyping ? '#f3f4f6' : '#ffffff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: briefingTyping ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!briefingTyping) {
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!briefingTyping) {
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                        }
+                      }}
+                    >
+                      {hero.avatar_url && (
+                        <img
+                          src={hero.avatar_url}
+                          alt={hero.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setMissionBriefingOpen(false)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Messages Container */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              backgroundColor: '#ffffff'
+            }}>
+              {briefingMessages.map(message => (
+                <div
+                  key={message.id}
+                  style={{
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    backgroundColor: message.sender === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: message.sender === 'user' ? '#ffffff' : '#374151',
+                    border: message.sender === 'user' ? 'none' : '1px solid #e2e8f0'
+                  }}>
+                    {message.speaker && message.sender !== 'user' && (
+                      <div style={{
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '6px',
+                        fontSize: '12px'
+                      }}>
+                        {message.speaker}
+                      </div>
+                    )}
+                    <div style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                      {message.text}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {briefingTyping && (
+                <div style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.2s'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.4s'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <form onSubmit={handleUserMessage} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={briefingInput}
+                  onChange={(e) => setBriefingInput(e.target.value)}
+                  placeholder="Type your message to the team..."
+                  disabled={briefingTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    color: '#374151',
+                    backgroundColor: briefingTyping ? '#f9fafb' : '#ffffff'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!briefingInput.trim() || briefingTyping}
+                  style={{
+                    padding: '12px 20px',
+                    backgroundColor: (!briefingInput.trim() || briefingTyping) ? '#d1d5db' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (!briefingInput.trim() || briefingTyping) ? 'not-allowed' : 'pointer',
+                    minWidth: '80px'
+                  }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </>
   );
@@ -682,12 +1152,20 @@ function ChatBoxComponent({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        const container = messagesEndRef.current.parentElement;
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 10);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatBox.messages]);
+  }, [chatBox.messages, chatBox.streamingContent, chatBox.isTyping]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
