@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge } from '@xyflow/react';
+import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
  
 const initialNodes: Node[] = [
@@ -50,6 +50,78 @@ const initialEdges: Edge[] = [
   { id: 'node2-node5', source: 'node2', target: 'node5' },
   { id: 'node4-node6', source: 'node4', target: 'node6' },
 ];
+
+function CustomControls() {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '12px',
+      right: '12px',
+      display: 'flex',
+      gap: '4px',
+      zIndex: 1000
+    }}>
+      <button
+        onClick={() => zoomIn()}
+        style={{
+          width: '24px',
+          height: '24px',
+          backgroundColor: 'white',
+          border: '1px solid #ccc',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          color: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        +
+      </button>
+      <button
+        onClick={() => zoomOut()}
+        style={{
+          width: '24px',
+          height: '24px',
+          backgroundColor: 'white',
+          border: '1px solid #ccc',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          color: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        −
+      </button>
+      <button
+        onClick={() => fitView()}
+        style={{
+          width: '24px',
+          height: '24px',
+          backgroundColor: 'white',
+          border: '1px solid #ccc',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          color: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        ⌂
+      </button>
+    </div>
+  );
+}
  
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -69,7 +141,7 @@ export default function ProofOfConcept() {
   );
  
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -78,7 +150,8 @@ export default function ProofOfConcept() {
         onConnect={onConnect}
         fitView
       >
-        <Background variant="dots" gap={20} size={1} color="#94a3b8" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
+        <CustomControls />
       </ReactFlow>
     </div>
   );
