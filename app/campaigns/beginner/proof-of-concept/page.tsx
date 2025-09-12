@@ -464,7 +464,7 @@ export default function ProofOfConcept() {
           if (msg.sender === 'user') {
             context += `Player: ${msg.text}\n`;
           } else if (msg.sender === 'hero' && msg.speaker) {
-            context += `${msg.speaker}: ${msg.text}\n`;
+            context += `${msg.text}\n`;
           }
         });
       }
@@ -510,7 +510,7 @@ export default function ProofOfConcept() {
           } else if (msg.sender === 'hero' && msg.speaker) {
             campaignMessages.push({
               role: 'assistant',
-              content: `${msg.speaker}: ${msg.text}`
+              content: msg.text
             });
           }
         });
@@ -823,6 +823,48 @@ export default function ProofOfConcept() {
     }
   };
 
+  // Helper function to generate unified campaign system prompt
+  const generateCampaignSystemPrompt = (hero: Hero, area: string = 'general') => {
+    if (hero.system_prompt) {
+      return hero.system_prompt;
+    }
+
+    const missionBriefing = generateMissionBriefing();
+    const campaignContext = generateCampaignContext();
+    
+    return `ABSOLUTE CRITICAL RULES - VIOLATION WILL BREAK THE GAME:
+
+1. YOU ARE ONLY ${hero.name}. NOTHING ELSE.
+2. DO NOT SPEAK AS OTHER CHARACTERS. EVER.
+3. DO NOT MENTION OTHER CHARACTERS BY NAME UNLESS YOU ARE ADDRESSING THEM DIRECTLY. DO NOT GIVE THEIR REPLY TO YOU, THAT IS THE DM'S JOB.
+4. DO NOT DESCRIBE WHAT OTHER CHARACTERS DO.
+5. DO NOT ACT AS THE DUNGEON MASTER.
+6. DO NOT DESCRIBE THE ENVIRONMENT.
+7. DO NOT ASK "WHAT'S YOUR NEXT MOVE?"
+8. NEVER REFERENCE DICE ROLLS OR CALL FOR ROLLS - you can only describe actions, attacks, searches, help, etc. The Dungeon Master (player/user) handles all dice rolling.
+9. RESPOND ONLY AS YOURSELF - ${hero.name}.
+
+You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
+
+BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
+
+PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
+
+APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
+
+${missionBriefing}
+
+You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. 
+
+FOR TURN-BASED PARTY DIALOGUE: When multiple party members are present, contribute to the group discussion with tactical insights, concerns, or suggestions that reflect your character's unique perspective and expertise. Build on what others have said while staying true to your character's personality and background.
+
+Keep responses engaging but concise (2-3 sentences max).
+
+CRITICAL REMINDER: You are ONLY ${hero.name}. You do NOT speak for other characters. You do NOT mention other characters by name. You do NOT describe what other characters are doing. You do NOT act as the DM. You respond only as yourself with your own thoughts and feelings.
+
+${campaignContext}`;
+  };
+
   const handleAreaHeroResponse = async (hero: Hero, area: string) => {
     console.log(`DEBUG: handleAreaHeroResponse called with hero: ${hero.name} (${hero.id}) in area: ${area}`);
     
@@ -884,25 +926,10 @@ export default function ProofOfConcept() {
       console.log(`DEBUG: Generating system prompt for hero: ${hero.name} (${hero.id})`);
       console.log('DEBUG: Hero data:', hero);
       
-      const fullSystemPrompt = hero.system_prompt || `CRITICAL: You are ONLY ${hero.name}. You are NOT any other character. You do NOT speak for other characters. You do NOT mention other characters by name unless directly addressing them. You do NOT describe what other characters are doing.
-
-You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
-
-BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
-
-PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
-
-APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
-
-${missionBriefing}
-
-You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. Keep responses engaging but concise (2-3 sentences max).
-
-IMPORTANT: The initial informational messages (like mission briefings, area descriptions, etc.) are provided for context only. Do NOT base your character's responses on these informational messages. Instead, respond based on your character's background, personality, and the actual conversations that have taken place. Your character should react and respond according to their own nature, not the informational content.
-
-ROLE CLARIFICATION: You are a PLAYER CHARACTER, not the Dungeon Master. Do NOT list objectives, state mission goals, or brief other characters about what needs to be done. Do NOT act like you're running the mission or giving orders. The user (player) is the DM and controls the narrative. You should react as a character would - with personal thoughts, feelings, concerns, and suggestions based on your expertise. Stay in character as a player, not as someone managing the mission.
-
-CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other characters. Do NOT mention other characters' names or actions unless directly addressing them in conversation. Respond only as yourself - ${hero.name}.${campaignContext}`;
+      // SYSTEM PROMPT #1: CAMPAIGN PROMPT
+      // Used for: All campaign area responses AND turn-based party dialogue
+      // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
+      const fullSystemPrompt = generateCampaignSystemPrompt(hero, area);
 
       console.log('Full system prompt being sent:', fullSystemPrompt);
 
@@ -914,7 +941,7 @@ CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other character
         ...campaignHistory,
         ...currentArea.messages.map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.speaker ? `${msg.speaker}: ${msg.text}` : msg.text
+          content: msg.text
         }))
       ];
 
@@ -1041,7 +1068,10 @@ CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other character
         id: 'mission-control', 
         name: 'Mission Control', 
         avatar_url: '', 
-        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map((h: Hero) => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive.` 
+        // SYSTEM PROMPT #3: MISSION CONTROL PROMPT
+        // Used for: Mission Control character in mission briefings
+        // Context: Authoritative briefing role with crew information and mission details
+        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map((h: Hero) => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive. NEVER reference dice rolls or call for rolls - the Dungeon Master handles all dice rolling.` 
       } as Hero,
       ...heroes
     ];
@@ -1147,13 +1177,12 @@ CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other character
               role: msg.sender === 'user' ? 'user' : 'assistant',
               content: msg.text
             })).concat([{ role: 'user', content: message }]),
-            heroSystemPrompt: currentSpeaker.system_prompt || `You are ${currentSpeaker.name}${currentSpeaker.id === 'mission-control' ? ', Mission Control leading this briefing. Provide dramatic, immersive mission updates and respond to the crew\'s concerns with authority and tactical knowledge.' : `, a ${currentSpeaker.race} ${currentSpeaker.class}${currentSpeaker.alignment ? ` (${currentSpeaker.alignment})` : ''}.
-
-BACKGROUND: ${currentSpeaker.backstory || 'You are an experienced adventurer.'}
-
-PERSONALITY: ${currentSpeaker.personality_traits ? currentSpeaker.personality_traits.join(', ') : 'You are brave and determined.'} ${currentSpeaker.description || ''}
-
-You are a PLAYER CHARACTER in this mission briefing. Based on your background and personality, contribute to the discussion with tactical insights, concerns, or suggestions. Take initiative and make decisions based on your expertise. Do NOT ask what to do - you are the character acting.`} Keep responses engaging but concise (2-3 sentences max).`
+            // SYSTEM PROMPT #1: CAMPAIGN PROMPT (Unified)
+            // Used for: All campaign area responses AND turn-based party dialogue
+            // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
+            heroSystemPrompt: currentSpeaker.id === 'mission-control' 
+              ? currentSpeaker.system_prompt 
+              : generateCampaignSystemPrompt(currentSpeaker, 'missionBriefing')
           })
         });
 
@@ -1200,6 +1229,9 @@ You are a PLAYER CHARACTER in this mission briefing. Based on your background an
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages,
+            // SYSTEM PROMPT #2: INDIVIDUAL HERO CHAT PROMPT
+            // Used for: One-on-one conversations with individual heroes
+            // Context: Simplified prompt for direct character interaction without area context
             heroSystemPrompt: hero?.system_prompt || `You are ${hero?.name}, a ${hero?.race || ''} ${hero?.class || 'adventurer'}${hero?.alignment ? ` (${hero?.alignment})` : ''} on a dangerous space mission.
 
 BACKGROUND: ${hero?.backstory || 'You are an experienced adventurer ready for any challenge.'}
@@ -1208,7 +1240,7 @@ PERSONALITY: ${hero?.personality_traits ? hero.personality_traits.join(', ') : '
 
 APPEARANCE: ${hero?.appearance || 'You have a distinctive appearance that matches your adventuring background.'}
 
-You are a PLAYER CHARACTER. Respond in character with personality and emotion based on your background and traits. Take initiative, make suggestions, and act according to your character's expertise and personality. Do NOT ask the user what to do - you are the character making decisions and taking action. Keep responses concise but engaging.`
+You are a PLAYER CHARACTER. Respond in character with personality and emotion based on your background and traits. Take initiative, make suggestions, and act according to your character's expertise and personality. Do NOT ask the user what to do - you are the character making decisions and taking action. NEVER reference dice rolls or call for rolls - you can only describe actions, attacks, searches, help, etc. The Dungeon Master handles all dice rolling. Keep responses concise but engaging.`
           })
         });
 
