@@ -171,8 +171,19 @@ function CustomControls({ onStartNewCampaign }: { onStartNewCampaign: () => void
   );
 }
 
-function DiceRoller({ missionBriefingOpen, onDiceRoll }: { 
+function DiceRoller({ 
+  missionBriefingOpen, 
+  medicalBayOpen, 
+  armoryOpen, 
+  captainsQuartersOpen, 
+  bridgeOpen, 
+  onDiceRoll 
+}: { 
   missionBriefingOpen: boolean; 
+  medicalBayOpen: boolean;
+  armoryOpen: boolean;
+  captainsQuartersOpen: boolean;
+  bridgeOpen: boolean;
   onDiceRoll: (roll: number) => void; 
 }) {
   const [diceValue, setDiceValue] = useState<number | null>(null);
@@ -185,8 +196,8 @@ function DiceRoller({ missionBriefingOpen, onDiceRoll }: {
       setDiceValue(roll);
       setIsRolling(false);
       
-      // If mission briefing is open, pass the roll to it
-      if (missionBriefingOpen) {
+      // If any gameplay area is open, pass the roll to it
+      if (missionBriefingOpen || medicalBayOpen || armoryOpen || captainsQuartersOpen || bridgeOpen) {
         onDiceRoll(roll);
       }
     }, 300);
@@ -359,6 +370,38 @@ export default function ProofOfConcept() {
   const [briefingInput, setBriefingInput] = useState('');
   const briefingMessagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Medical Bay chat state
+  const [medicalBayOpen, setMedicalBayOpen] = useState(false);
+  const [medicalBayParty, setMedicalBayParty] = useState<Hero[]>([]);
+  const [medicalBayMessages, setMedicalBayMessages] = useState<{sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]>([]);
+  const [medicalBayTyping, setMedicalBayTyping] = useState(false);
+  const [medicalBayInput, setMedicalBayInput] = useState('');
+  const medicalBayMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Armory chat state
+  const [armoryOpen, setArmoryOpen] = useState(false);
+  const [armoryParty, setArmoryParty] = useState<Hero[]>([]);
+  const [armoryMessages, setArmoryMessages] = useState<{sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]>([]);
+  const [armoryTyping, setArmoryTyping] = useState(false);
+  const [armoryInput, setArmoryInput] = useState('');
+  const armoryMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Captain's Quarters chat state
+  const [captainsQuartersOpen, setCaptainsQuartersOpen] = useState(false);
+  const [captainsQuartersParty, setCaptainsQuartersParty] = useState<Hero[]>([]);
+  const [captainsQuartersMessages, setCaptainsQuartersMessages] = useState<{sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]>([]);
+  const [captainsQuartersTyping, setCaptainsQuartersTyping] = useState(false);
+  const [captainsQuartersInput, setCaptainsQuartersInput] = useState('');
+  const captainsQuartersMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Bridge/Boss Battle chat state
+  const [bridgeOpen, setBridgeOpen] = useState(false);
+  const [bridgeParty, setBridgeParty] = useState<Hero[]>([]);
+  const [bridgeMessages, setBridgeMessages] = useState<{sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]>([]);
+  const [bridgeTyping, setBridgeTyping] = useState(false);
+  const [bridgeInput, setBridgeInput] = useState('');
+  const bridgeMessagesEndRef = useRef<HTMLDivElement>(null);
+
   // Campaign chat persistence functions
   const saveCampaignChat = (area: string, messages: any[]) => {
     const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
@@ -377,14 +420,30 @@ export default function ProofOfConcept() {
   };
 
   const startNewCampaign = () => {
-    const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\n• Mission briefing conversations\n• Individual hero chats\n• All chat history and progress\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
+    const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\n• Mission briefing conversations\n• Medical Bay conversations\n• Armory conversations\n• Captain's Quarters conversations\n• Bridge/Boss Battle conversations\n• Individual hero chats\n• All chat history and progress\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
     
     if (confirm(confirmMessage)) {
       clearCampaignChat();
+      
+      // Clear all chat areas
       setBriefingMessages([]);
       setBriefingParty([]);
+      setMedicalBayMessages([]);
+      setMedicalBayParty([]);
+      setArmoryMessages([]);
+      setArmoryParty([]);
+      setCaptainsQuartersMessages([]);
+      setCaptainsQuartersParty([]);
+      setBridgeMessages([]);
+      setBridgeParty([]);
       setChatBoxes([]);
+      
+      // Close all modals
       setMissionBriefingOpen(false);
+      setMedicalBayOpen(false);
+      setArmoryOpen(false);
+      setCaptainsQuartersOpen(false);
+      setBridgeOpen(false);
       setSelectedNode(null);
     }
   };
@@ -477,12 +536,60 @@ export default function ProofOfConcept() {
     briefingMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [briefingMessages, briefingTyping]);
 
+  // Auto-scroll to bottom when medical bay messages change or when typing
+  useEffect(() => {
+    medicalBayMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [medicalBayMessages, medicalBayTyping]);
+
+  // Auto-scroll to bottom when armory messages change or when typing
+  useEffect(() => {
+    armoryMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [armoryMessages, armoryTyping]);
+
+  // Auto-scroll to bottom when captain's quarters messages change or when typing
+  useEffect(() => {
+    captainsQuartersMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [captainsQuartersMessages, captainsQuartersTyping]);
+
+  // Auto-scroll to bottom when bridge messages change or when typing
+  useEffect(() => {
+    bridgeMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [bridgeMessages, bridgeTyping]);
+
   // Save briefing messages to localStorage whenever they change
   useEffect(() => {
     if (briefingMessages.length > 0) {
       saveCampaignChat('missionBriefing', briefingMessages);
     }
   }, [briefingMessages]);
+
+  // Save medical bay messages to localStorage whenever they change
+  useEffect(() => {
+    if (medicalBayMessages.length > 0) {
+      saveCampaignChat('medicalBay', medicalBayMessages);
+    }
+  }, [medicalBayMessages]);
+
+  // Save armory messages to localStorage whenever they change
+  useEffect(() => {
+    if (armoryMessages.length > 0) {
+      saveCampaignChat('armory', armoryMessages);
+    }
+  }, [armoryMessages]);
+
+  // Save captain's quarters messages to localStorage whenever they change
+  useEffect(() => {
+    if (captainsQuartersMessages.length > 0) {
+      saveCampaignChat('captainsQuarters', captainsQuartersMessages);
+    }
+  }, [captainsQuartersMessages]);
+
+  // Save bridge messages to localStorage whenever they change
+  useEffect(() => {
+    if (bridgeMessages.length > 0) {
+      saveCampaignChat('bridge', bridgeMessages);
+    }
+  }, [bridgeMessages]);
 
   // Save individual chat boxes to localStorage whenever they change
   useEffect(() => {
@@ -500,55 +607,174 @@ export default function ProofOfConcept() {
   }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
-    if (node.id === 'node1') { // Mission Briefing
-      // Get user's party from localStorage
-      const savedParty = localStorage.getItem('myParty');
-      if (savedParty) {
-        try {
-          const party: Hero[] = JSON.parse(savedParty);
-          setBriefingParty(party);
-          
-          // Load existing chat history or create initial message
-          const savedMessages = loadCampaignChat('missionBriefing');
-          if (savedMessages.length > 0) {
-            // Load existing chat history
-            setBriefingMessages(savedMessages);
-          } else {
-            // Create initial mission briefing message
-            setBriefingMessages([
-              {
-                sender: 'hero',
-                text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
-                id: Date.now().toString(),
-                speaker: 'Mission Control'
-              }
-            ]);
-          }
-          
-          setMissionBriefingOpen(true);
-          return;
-        } catch (error) {
-          console.error('Failed to parse saved party:', error);
-        }
-      }
-      // Fallback to regular modal if no party
+    // Get user's party from localStorage
+    const savedParty = localStorage.getItem('myParty');
+    if (!savedParty) {
       setSelectedNode(node);
-    } else {
+      return;
+    }
+
+    try {
+      const party: Hero[] = JSON.parse(savedParty);
+
+      if (node.id === 'node1') { // Mission Briefing
+        setBriefingParty(party);
+        
+        // Load existing chat history or create initial message
+        const savedMessages = loadCampaignChat('missionBriefing');
+        if (savedMessages.length > 0) {
+          setBriefingMessages(savedMessages);
+        } else {
+          setBriefingMessages([
+            {
+              sender: 'hero',
+              text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\n**Your crew consists of:**\n${party.map((h: Hero) => `• **${h.name}** - ${h.race} ${h.class}`).join('\n')}\n\n**Mission Details:**\n• The vessel was last seen near the Kepler Station\n• Communication was lost 72 hours ago\n• Your mission: board the vessel, investigate, and report back\n\n> *Remember: Trust no one. Something is very wrong here.*`,
+              id: Date.now().toString(),
+              speaker: 'Mission Control'
+            }
+          ]);
+        }
+        
+        setMissionBriefingOpen(true);
+      } else if (node.id === 'node2') { // Medical Bay
+        setMedicalBayParty(party);
+        
+        const savedMessages = loadCampaignChat('medicalBay');
+        if (savedMessages.length > 0) {
+          setMedicalBayMessages(savedMessages);
+        } else {
+          setMedicalBayMessages([
+            {
+              sender: 'hero',
+              text: `*Medical Bay lights flicker to life*\n\n**Ship's AI:** Welcome to the medical bay. I detect signs of recent activity here. The medical scanners show traces of an unknown substance, and some equipment appears to have been used recently.\n\n**Available Resources:**\n• Emergency medical supplies\n• Advanced diagnostic equipment\n• Unknown substance samples\n• Crew medical records\n\nWhat would you like to investigate first?`,
+              id: Date.now().toString(),
+              speaker: "Ship's AI"
+            }
+          ]);
+        }
+        
+        setMedicalBayOpen(true);
+      } else if (node.id === 'node3') { // Armory
+        setArmoryParty(party);
+        
+        const savedMessages = loadCampaignChat('armory');
+        if (savedMessages.length > 0) {
+          setArmoryMessages(savedMessages);
+        } else {
+          setArmoryMessages([
+            {
+              sender: 'hero',
+              text: `*Armory security system activates*\n\n**Security AI:** Access granted. I detect this area has been partially compromised. Several weapons are missing from their assigned positions, but advanced equipment remains available.\n\n**Available Equipment:**\n• Energy weapons and ammunition\n• Tactical armor and shields\n• Security logs showing unauthorized access\n• Emergency protocols\n\n**Security Alert:** Unauthorized personnel accessed this area 48 hours ago.`,
+              id: Date.now().toString(),
+              speaker: "Security AI"
+            }
+          ]);
+        }
+        
+        setArmoryOpen(true);
+      } else if (node.id === 'node4') { // Captain's Quarters
+        setCaptainsQuartersParty(party);
+        
+        const savedMessages = loadCampaignChat('captainsQuarters');
+        if (savedMessages.length > 0) {
+          setCaptainsQuartersMessages(savedMessages);
+        } else {
+          setCaptainsQuartersMessages([
+            {
+              sender: 'hero',
+              text: `*Captain's quarters door slides open*\n\n**Personal AI:** Captain's private chambers accessed. I've been maintaining security protocols since the incident. The captain's personal logs, encrypted files, and private communications are available for review.\n\n**Key Information:**\n• Captain's personal logs and reports\n• Encrypted communications with headquarters\n• Hidden passage discovered\n• Crew status reports\n• Mission parameters and objectives\n\n**Warning:** Some files require captain-level authorization to access.`,
+              id: Date.now().toString(),
+              speaker: "Personal AI"
+            }
+          ]);
+        }
+        
+        setCaptainsQuartersOpen(true);
+      } else if (node.id === 'node5') { // Bridge/Boss Battle
+        setBridgeParty(party);
+        
+        const savedMessages = loadCampaignChat('bridge');
+        if (savedMessages.length > 0) {
+          setBridgeMessages(savedMessages);
+        } else {
+          setBridgeMessages([
+            {
+              sender: 'hero',
+              text: `*Bridge systems come online*\n\n**Main Computer:** Welcome to the bridge. All ship systems are now under your control. However, I detect an unknown entity has been attempting to override ship controls from this location.\n\n**Final Confrontation:**\n• All paths have led to this moment\n• Ship's main computer is compromised\n• Unknown entity detected in systems\n• Emergency protocols activated\n• Crew safety depends on your actions\n\n**Status:** This is the final challenge. Use everything you've learned and collected to overcome the threat that has taken control of the ship.`,
+              id: Date.now().toString(),
+              speaker: "Main Computer"
+            }
+          ]);
+        }
+        
+        setBridgeOpen(true);
+      } else {
+        setSelectedNode(node);
+      }
+    } catch (error) {
+      console.error('Failed to parse saved party:', error);
       setSelectedNode(node);
     }
   };
 
-  const handleHeroResponse = async (hero: Hero) => {
-    if (briefingTyping) return;
+  const handleAreaHeroResponse = async (hero: Hero, area: string) => {
+    const areaStates = {
+      'missionBriefing': {
+        typing: briefingTyping,
+        setTyping: setBriefingTyping,
+        messages: briefingMessages,
+        setMessages: setBriefingMessages,
+        party: briefingParty
+      },
+      'medicalBay': {
+        typing: medicalBayTyping,
+        setTyping: setMedicalBayTyping,
+        messages: medicalBayMessages,
+        setMessages: setMedicalBayMessages,
+        party: medicalBayParty
+      },
+      'armory': {
+        typing: armoryTyping,
+        setTyping: setArmoryTyping,
+        messages: armoryMessages,
+        setMessages: setArmoryMessages,
+        party: armoryParty
+      },
+      'captainsQuarters': {
+        typing: captainsQuartersTyping,
+        setTyping: setCaptainsQuartersTyping,
+        messages: captainsQuartersMessages,
+        setMessages: setCaptainsQuartersMessages,
+        party: captainsQuartersParty
+      },
+      'bridge': {
+        typing: bridgeTyping,
+        setTyping: setBridgeTyping,
+        messages: bridgeMessages,
+        setMessages: setBridgeMessages,
+        party: bridgeParty
+      }
+    };
+
+    const currentArea = areaStates[area as keyof typeof areaStates];
+    if (!currentArea || currentArea.typing) return;
     
-    setBriefingTyping(true);
+    currentArea.setTyping(true);
     
     try {
+      const areaContexts = {
+        'missionBriefing': 'listening to a mission briefing about investigating a mysterious silent research vessel',
+        'medicalBay': 'investigating the ship\'s medical bay, examining equipment and medical supplies',
+        'armory': 'exploring the ship\'s armory, checking weapons and security systems',
+        'captainsQuarters': 'searching the captain\'s quarters for clues and information',
+        'bridge': 'on the bridge facing the final confrontation with the unknown threat'
+      };
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: briefingMessages.map(msg => ({
+          messages: currentArea.messages.map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.speaker ? `${msg.speaker}: ${msg.text}` : msg.text
           })),
@@ -560,7 +786,7 @@ PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'Y
 
 APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
 
-You are a PLAYER CHARACTER listening to a mission briefing about investigating a mysterious silent research vessel. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions about the mission. Take initiative - propose ideas, voice concerns, or suggest preparations based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Keep responses engaging but concise (2-3 sentences max).`
+You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. Keep responses engaging but concise (2-3 sentences max).`
         })
       });
 
@@ -568,14 +794,14 @@ You are a PLAYER CHARACTER listening to a mission briefing about investigating a
         const data = await response.text();
         
         // Stop typing and add empty message for streaming
-        setBriefingTyping(false);
+        currentArea.setTyping(false);
         const newMessage = {
           sender: 'hero' as const,
           text: '',
           id: Date.now().toString(),
           speaker: hero.name
         };
-        setBriefingMessages(prev => [...prev, newMessage]);
+        currentArea.setMessages(prev => [...prev, newMessage]);
         
         // Stream the response word by word
         const words = data.split(' ');
@@ -584,7 +810,7 @@ You are a PLAYER CHARACTER listening to a mission briefing about investigating a
         for (let i = 0; i < words.length; i++) {
           displayedContent += (i > 0 ? ' ' : '') + words[i];
           
-          setBriefingMessages(prev => prev.map(msg => 
+          currentArea.setMessages(prev => prev.map(msg => 
             msg.id === newMessage.id 
               ? { ...msg, text: displayedContent }
               : msg
@@ -603,25 +829,71 @@ You are a PLAYER CHARACTER listening to a mission briefing about investigating a
         id: (Date.now()).toString(),
         speaker: hero.name
       };
-      setBriefingMessages(prev => [...prev, errorMessage]);
+      currentArea.setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setBriefingTyping(false);
+      currentArea.setTyping(false);
     }
   };
 
-  const handleUserMessage = (e: React.FormEvent) => {
+  // Legacy function for backward compatibility
+  const handleHeroResponse = async (hero: Hero) => {
+    return handleAreaHeroResponse(hero, 'missionBriefing');
+  };
+
+  const handleAreaUserMessage = (e: React.FormEvent, area: string, input: string, setInput: (value: string) => void) => {
     e.preventDefault();
-    if (!briefingInput.trim() || briefingTyping) return;
+    
+    const areaStates = {
+      'missionBriefing': {
+        typing: briefingTyping,
+        messages: briefingMessages,
+        setMessages: setBriefingMessages,
+        party: briefingParty
+      },
+      'medicalBay': {
+        typing: medicalBayTyping,
+        messages: medicalBayMessages,
+        setMessages: setMedicalBayMessages,
+        party: medicalBayParty
+      },
+      'armory': {
+        typing: armoryTyping,
+        messages: armoryMessages,
+        setMessages: setArmoryMessages,
+        party: armoryParty
+      },
+      'captainsQuarters': {
+        typing: captainsQuartersTyping,
+        messages: captainsQuartersMessages,
+        setMessages: setCaptainsQuartersMessages,
+        party: captainsQuartersParty
+      },
+      'bridge': {
+        typing: bridgeTyping,
+        messages: bridgeMessages,
+        setMessages: setBridgeMessages,
+        party: bridgeParty
+      }
+    };
+
+    const currentArea = areaStates[area as keyof typeof areaStates];
+    if (!currentArea || !input.trim() || currentArea.typing) return;
     
     const userMessage = {
       sender: 'user' as const,
-      text: briefingInput.trim(),
+      text: input.trim(),
       id: Date.now().toString()
     };
     
-    setBriefingMessages(prev => [...prev, userMessage]);
-    setBriefingInput('');
+    currentArea.setMessages(prev => [...prev, userMessage]);
+    setInput('');
   };
+
+  // Legacy function for backward compatibility
+  const handleUserMessage = (e: React.FormEvent) => {
+    return handleAreaUserMessage(e, 'missionBriefing', briefingInput, setBriefingInput);
+  };
+
 
   const openGroupChat = (heroes: Hero[]) => {
     // Create all speakers (Mission Control + party members)
@@ -934,9 +1206,17 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
   };
 
   const handleDiceRoll = (roll: number) => {
-    // Add the dice roll only to the mission briefing input if it's open
+    // Add the dice roll to the currently open gameplay area
     if (missionBriefingOpen) {
       setBriefingInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
+    } else if (medicalBayOpen) {
+      setMedicalBayInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
+    } else if (armoryOpen) {
+      setArmoryInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
+    } else if (captainsQuartersOpen) {
+      setCaptainsQuartersInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
+    } else if (bridgeOpen) {
+      setBridgeInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
     }
   };
 
@@ -1003,7 +1283,14 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
         <PartyAvatars onAvatarClick={onAvatarClick} />
       </ReactFlow>
 
-      <DiceRoller missionBriefingOpen={missionBriefingOpen} onDiceRoll={handleDiceRoll} />
+      <DiceRoller 
+        missionBriefingOpen={missionBriefingOpen} 
+        medicalBayOpen={medicalBayOpen}
+        armoryOpen={armoryOpen}
+        captainsQuartersOpen={captainsQuartersOpen}
+        bridgeOpen={bridgeOpen}
+        onDiceRoll={handleDiceRoll} 
+      />
 
       {/* Chat Boxes */}
       {chatBoxes.map((chatBox) => (
@@ -1018,6 +1305,1030 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
           onInputChange={(value) => updateChatBoxInput(chatBox.hero.id, value)}
         />
       ))}
+
+      {/* Medical Bay Modal */}
+      {medicalBayOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: 200,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header with Party Avatars */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  margin: '0 0 8px 0'
+                }}>
+                  Medical Bay
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Your Team:
+                  </span>
+                  {medicalBayParty.map(hero => (
+                    <button
+                      key={hero.id}
+                      onClick={() => handleAreaHeroResponse(hero, 'medicalBay')}
+                      disabled={medicalBayTyping}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: medicalBayTyping ? '#f3f4f6' : '#ffffff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: medicalBayTyping ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!medicalBayTyping) {
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!medicalBayTyping) {
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                        }
+                      }}
+                    >
+                      {hero.avatar_url && (
+                        <img
+                          src={hero.avatar_url}
+                          alt={hero.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setMedicalBayOpen(false)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Messages Container */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              backgroundColor: '#ffffff'
+            }}>
+              {medicalBayMessages.map(message => (
+                <div
+                  key={message.id}
+                  style={{
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    backgroundColor: message.sender === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: message.sender === 'user' ? '#ffffff' : '#374151',
+                    border: message.sender === 'user' ? 'none' : '1px solid #e2e8f0'
+                  }}>
+                    {message.speaker && message.sender !== 'user' && (
+                      <div style={{
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '6px',
+                        fontSize: '12px'
+                      }}>
+                        {message.speaker}
+                      </div>
+                    )}
+                    <MarkdownMessage 
+                      content={message.text} 
+                      isUser={message.sender === 'user'} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {medicalBayTyping && (
+                <div style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.2s'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.4s'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div ref={medicalBayMessagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <form onSubmit={(e) => handleAreaUserMessage(e, 'medicalBay', medicalBayInput, setMedicalBayInput)} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={medicalBayInput}
+                  onChange={(e) => setMedicalBayInput(e.target.value)}
+                  placeholder="Type your message to the team..."
+                  disabled={medicalBayTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    color: '#374151',
+                    backgroundColor: medicalBayTyping ? '#f9fafb' : '#ffffff'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!medicalBayInput.trim() || medicalBayTyping}
+                  style={{
+                    padding: '12px 20px',
+                    backgroundColor: (!medicalBayInput.trim() || medicalBayTyping) ? '#d1d5db' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (!medicalBayInput.trim() || medicalBayTyping) ? 'not-allowed' : 'pointer',
+                    minWidth: '80px'
+                  }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Armory Modal */}
+      {armoryOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: 200,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header with Party Avatars */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  margin: '0 0 8px 0'
+                }}>
+                  Armory
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Your Team:
+                  </span>
+                  {armoryParty.map(hero => (
+                    <button
+                      key={hero.id}
+                      onClick={() => handleAreaHeroResponse(hero, 'armory')}
+                      disabled={armoryTyping}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: armoryTyping ? '#f3f4f6' : '#ffffff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: armoryTyping ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!armoryTyping) {
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!armoryTyping) {
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                        }
+                      }}
+                    >
+                      {hero.avatar_url && (
+                        <img
+                          src={hero.avatar_url}
+                          alt={hero.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setArmoryOpen(false)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Messages Container */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              backgroundColor: '#ffffff'
+            }}>
+              {armoryMessages.map(message => (
+                <div
+                  key={message.id}
+                  style={{
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    backgroundColor: message.sender === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: message.sender === 'user' ? '#ffffff' : '#374151',
+                    border: message.sender === 'user' ? 'none' : '1px solid #e2e8f0'
+                  }}>
+                    {message.speaker && message.sender !== 'user' && (
+                      <div style={{
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '6px',
+                        fontSize: '12px'
+                      }}>
+                        {message.speaker}
+                      </div>
+                    )}
+                    <MarkdownMessage 
+                      content={message.text} 
+                      isUser={message.sender === 'user'} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {armoryTyping && (
+                <div style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.2s'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.4s'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div ref={armoryMessagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <form onSubmit={(e) => handleAreaUserMessage(e, 'armory', armoryInput, setArmoryInput)} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={armoryInput}
+                  onChange={(e) => setArmoryInput(e.target.value)}
+                  placeholder="Type your message to the team..."
+                  disabled={armoryTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    color: '#374151',
+                    backgroundColor: armoryTyping ? '#f9fafb' : '#ffffff'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!armoryInput.trim() || armoryTyping}
+                  style={{
+                    padding: '12px 20px',
+                    backgroundColor: (!armoryInput.trim() || armoryTyping) ? '#d1d5db' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (!armoryInput.trim() || armoryTyping) ? 'not-allowed' : 'pointer',
+                    minWidth: '80px'
+                  }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Captain's Quarters Modal */}
+      {captainsQuartersOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: 200,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header with Party Avatars */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  margin: '0 0 8px 0'
+                }}>
+                  Captain's Quarters
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Your Team:
+                  </span>
+                  {captainsQuartersParty.map(hero => (
+                    <button
+                      key={hero.id}
+                      onClick={() => handleAreaHeroResponse(hero, 'captainsQuarters')}
+                      disabled={captainsQuartersTyping}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: captainsQuartersTyping ? '#f3f4f6' : '#ffffff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: captainsQuartersTyping ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!captainsQuartersTyping) {
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!captainsQuartersTyping) {
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                        }
+                      }}
+                    >
+                      {hero.avatar_url && (
+                        <img
+                          src={hero.avatar_url}
+                          alt={hero.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setCaptainsQuartersOpen(false)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Messages Container */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              backgroundColor: '#ffffff'
+            }}>
+              {captainsQuartersMessages.map(message => (
+                <div
+                  key={message.id}
+                  style={{
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    backgroundColor: message.sender === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: message.sender === 'user' ? '#ffffff' : '#374151',
+                    border: message.sender === 'user' ? 'none' : '1px solid #e2e8f0'
+                  }}>
+                    {message.speaker && message.sender !== 'user' && (
+                      <div style={{
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '6px',
+                        fontSize: '12px'
+                      }}>
+                        {message.speaker}
+                      </div>
+                    )}
+                    <MarkdownMessage 
+                      content={message.text} 
+                      isUser={message.sender === 'user'} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {captainsQuartersTyping && (
+                <div style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.2s'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.4s'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div ref={captainsQuartersMessagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <form onSubmit={(e) => handleAreaUserMessage(e, 'captainsQuarters', captainsQuartersInput, setCaptainsQuartersInput)} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={captainsQuartersInput}
+                  onChange={(e) => setCaptainsQuartersInput(e.target.value)}
+                  placeholder="Type your message to the team..."
+                  disabled={captainsQuartersTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    color: '#374151',
+                    backgroundColor: captainsQuartersTyping ? '#f9fafb' : '#ffffff'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!captainsQuartersInput.trim() || captainsQuartersTyping}
+                  style={{
+                    padding: '12px 20px',
+                    backgroundColor: (!captainsQuartersInput.trim() || captainsQuartersTyping) ? '#d1d5db' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (!captainsQuartersInput.trim() || captainsQuartersTyping) ? 'not-allowed' : 'pointer',
+                    minWidth: '80px'
+                  }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bridge/Boss Battle Modal */}
+      {bridgeOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          zIndex: 200,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header with Party Avatars */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  margin: '0 0 8px 0'
+                }}>
+                  Bridge - Final Confrontation
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  alignItems: 'center'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    fontWeight: '500'
+                  }}>
+                    Your Team:
+                  </span>
+                  {bridgeParty.map(hero => (
+                    <button
+                      key={hero.id}
+                      onClick={() => handleAreaHeroResponse(hero, 'bridge')}
+                      disabled={bridgeTyping}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        backgroundColor: bridgeTyping ? '#f3f4f6' : '#ffffff',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        cursor: bridgeTyping ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!bridgeTyping) {
+                          e.currentTarget.style.borderColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = '#eff6ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!bridgeTyping) {
+                          e.currentTarget.style.borderColor = '#e5e7eb';
+                          e.currentTarget.style.backgroundColor = '#ffffff';
+                        }
+                      }}
+                    >
+                      {hero.avatar_url && (
+                        <img
+                          src={hero.avatar_url}
+                          alt={hero.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                      {hero.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setBridgeOpen(false)}
+                style={{
+                  color: '#9ca3af',
+                  fontSize: '24px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Messages Container */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '24px',
+              backgroundColor: '#ffffff'
+            }}>
+              {bridgeMessages.map(message => (
+                <div
+                  key={message.id}
+                  style={{
+                    marginBottom: '16px',
+                    display: 'flex',
+                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    backgroundColor: message.sender === 'user' ? '#3b82f6' : '#f8fafc',
+                    color: message.sender === 'user' ? '#ffffff' : '#374151',
+                    border: message.sender === 'user' ? 'none' : '1px solid #e2e8f0'
+                  }}>
+                    {message.speaker && message.sender !== 'user' && (
+                      <div style={{
+                        fontWeight: '600',
+                        color: '#1e293b',
+                        marginBottom: '6px',
+                        fontSize: '12px'
+                      }}>
+                        {message.speaker}
+                      </div>
+                    )}
+                    <MarkdownMessage 
+                      content={message.text} 
+                      isUser={message.sender === 'user'} 
+                    />
+                  </div>
+                </div>
+              ))}
+              {bridgeTyping && (
+                <div style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.2s'
+                      }} />
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#9ca3af',
+                        borderRadius: '50%',
+                        animation: 'blink 1.4s infinite',
+                        animationDelay: '0.4s'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                      Thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div ref={bridgeMessagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div style={{
+              padding: '20px 24px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#f8fafc'
+            }}>
+              <form onSubmit={(e) => handleAreaUserMessage(e, 'bridge', bridgeInput, setBridgeInput)} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={bridgeInput}
+                  onChange={(e) => setBridgeInput(e.target.value)}
+                  placeholder="Type your message to the team..."
+                  disabled={bridgeTyping}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    color: '#374151',
+                    backgroundColor: bridgeTyping ? '#f9fafb' : '#ffffff'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!bridgeInput.trim() || bridgeTyping}
+                  style={{
+                    padding: '12px 20px',
+                    backgroundColor: (!bridgeInput.trim() || bridgeTyping) ? '#d1d5db' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (!bridgeInput.trim() || bridgeTyping) ? 'not-allowed' : 'pointer',
+                    minWidth: '80px'
+                  }}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Node Info Modal */}
       {selectedNode && nodeInfo[selectedNode.id] && (
