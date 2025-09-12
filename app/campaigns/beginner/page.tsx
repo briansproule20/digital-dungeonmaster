@@ -25,6 +25,7 @@ export default function BeginnerCampaigns() {
   const [showModal, setShowModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [userParty, setUserParty] = useState<Hero[]>([]);
+  const [hasActiveCampaign, setHasActiveCampaign] = useState(false);
 
   const campaigns: Campaign[] = [
     {
@@ -38,7 +39,27 @@ export default function BeginnerCampaigns() {
     }
   ];
 
-  // Load user's party from localStorage
+  // Check for active campaign data
+  const checkForActiveCampaign = () => {
+    const campaignChat = localStorage.getItem('campaignChat');
+    if (campaignChat) {
+      try {
+        const parsedChat = JSON.parse(campaignChat);
+        // Check if there's any saved chat data for any area
+        const hasData = Object.keys(parsedChat).some(key => 
+          key !== 'lastUpdated' && parsedChat[key] && parsedChat[key].length > 0
+        );
+        setHasActiveCampaign(hasData);
+      } catch (error) {
+        console.error('Failed to parse campaign chat:', error);
+        setHasActiveCampaign(false);
+      }
+    } else {
+      setHasActiveCampaign(false);
+    }
+  };
+
+  // Load user's party from localStorage and check for active campaign
   useEffect(() => {
     const savedParty = localStorage.getItem('myParty');
     if (savedParty) {
@@ -49,6 +70,8 @@ export default function BeginnerCampaigns() {
         console.error('Failed to parse saved party:', error);
       }
     }
+    
+    checkForActiveCampaign();
   }, []);
 
   const openModal = (campaign: Campaign) => {
@@ -67,6 +90,11 @@ export default function BeginnerCampaigns() {
     }
   };
 
+  const resumeCampaign = () => {
+    // Resume the proof of concept campaign (the only one with save data)
+    window.location.href = '/campaigns/beginner/proof-of-concept';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
@@ -77,6 +105,23 @@ export default function BeginnerCampaigns() {
           <p className="text-lg text-gray-600">
             Easy Adventures for New Players
           </p>
+          
+          {/* Resume Campaign Button */}
+          {hasActiveCampaign && (
+            <div className="mt-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-blue-800 text-sm mb-3">
+                  <strong>Campaign in Progress!</strong> You have an active campaign with saved progress.
+                </p>
+                <button 
+                  onClick={resumeCampaign}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition duration-200"
+                >
+                  Resume Campaign
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
