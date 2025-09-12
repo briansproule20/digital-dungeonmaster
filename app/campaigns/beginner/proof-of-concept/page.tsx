@@ -832,6 +832,14 @@ export default function ProofOfConcept() {
     const missionBriefing = generateMissionBriefing();
     const campaignContext = generateCampaignContext();
     
+    const areaContexts = {
+      'missionBriefing': 'listening to a mission briefing about investigating a mysterious silent research vessel',
+      'medicalBay': 'investigating the ship\'s medical bay, examining equipment and medical supplies',
+      'armory': 'exploring the ship\'s armory, checking weapons and security systems',
+      'captainsQuarters': 'searching the captain\'s quarters for clues and information',
+      'bridge': 'on the bridge facing the final confrontation with the unknown threat'
+    };
+    
     return `ABSOLUTE CRITICAL RULES - VIOLATION WILL BREAK THE GAME:
 
 1. YOU ARE ONLY ${hero.name}. NOTHING ELSE.
