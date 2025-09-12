@@ -7,48 +7,47 @@ import '@xyflow/react/dist/style.css';
 const initialNodes: Node[] = [
   { 
     id: 'node1', 
-    position: { x: 200, y: 100 }, 
+    position: { x: 400, y: 50 }, 
     data: { label: 'Node 1' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    draggable: false
   },
   { 
     id: 'node2', 
-    position: { x: 400, y: 100 }, 
+    position: { x: 200, y: 200 }, 
     data: { label: 'Node 2' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    draggable: false
   },
   { 
     id: 'node3', 
-    position: { x: 100, y: 200 }, 
+    position: { x: 600, y: 200 }, 
     data: { label: 'Node 3' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    draggable: false
   },
   { 
     id: 'node4', 
-    position: { x: 300, y: 200 }, 
+    position: { x: 400, y: 350 }, 
     data: { label: 'Node 4' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    draggable: false
   },
   { 
     id: 'node5', 
-    position: { x: 500, y: 200 }, 
+    position: { x: 400, y: 500 }, 
     data: { label: 'Node 5' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
-  },
-  { 
-    id: 'node6', 
-    position: { x: 300, y: 300 }, 
-    data: { label: 'Node 6' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' }
+    style: { color: '#000', fontSize: '14px', fontWeight: 'bold' },
+    draggable: false
   },
 ];
 
 const initialEdges: Edge[] = [
+  { id: 'node1-node2', source: 'node1', target: 'node2' },
   { id: 'node1-node3', source: 'node1', target: 'node3' },
-  { id: 'node1-node4', source: 'node1', target: 'node4' },
   { id: 'node2-node4', source: 'node2', target: 'node4' },
-  { id: 'node2-node5', source: 'node2', target: 'node5' },
-  { id: 'node4-node6', source: 'node4', target: 'node6' },
+  { id: 'node3-node4', source: 'node3', target: 'node4' },
+  { id: 'node4-node5', source: 'node4', target: 'node5' },
 ];
 
 function CustomControls() {
