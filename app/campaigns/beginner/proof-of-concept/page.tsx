@@ -176,11 +176,12 @@ function DiceRoller() {
         fontSize: '16px',
         fontWeight: 'bold',
         color: '#333',
-        zIndex: 1000,
+        zIndex: 1001,
         boxShadow: '0 4px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
         transform: isRolling ? 'rotate(360deg) scale(1.1)' : 'rotate(0deg) scale(1)',
         transition: 'transform 0.3s ease-in-out',
-        textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+        textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+        pointerEvents: 'auto'
       }}
     >
       {isRolling ? '...' : (diceValue || 'D20')}
@@ -321,6 +322,11 @@ export default function ProofOfConcept() {
   const [briefingTyping, setBriefingTyping] = useState(false);
   const [briefingInput, setBriefingInput] = useState('');
   const briefingMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when briefing messages change or when typing
+  useEffect(() => {
+    briefingMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [briefingMessages, briefingTyping]);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
     if (node.id === 'node1') { // Mission Briefing
@@ -776,9 +782,10 @@ export default function ProofOfConcept() {
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
-        <DiceRoller />
         <PartyAvatars onAvatarClick={onAvatarClick} />
       </ReactFlow>
+
+      <DiceRoller />
 
       {/* Chat Boxes */}
       {chatBoxes.map((chatBox) => (
@@ -1080,6 +1087,7 @@ export default function ProofOfConcept() {
                   </div>
                 </div>
               )}
+              <div ref={briefingMessagesEndRef} />
             </div>
 
             {/* Input Area */}
@@ -1151,20 +1159,9 @@ function ChatBoxComponent({
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      if (messagesEndRef.current) {
-        const container = messagesEndRef.current.parentElement;
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 10);
-  };
-
+  // Auto-scroll to bottom when messages change or when typing
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatBox.messages, chatBox.streamingContent, chatBox.isTyping]);
 
   const handleSubmit = (e: React.FormEvent) => {
