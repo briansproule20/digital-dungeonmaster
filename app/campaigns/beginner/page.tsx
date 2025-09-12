@@ -145,38 +145,27 @@ export default function BeginnerCampaigns() {
 
               {/* Your Party */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Party ({userParty.length}/3)</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Your Party ({userParty.length}/3)</h3>
+                  <a 
+                    href="/my-party"
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Edit Party
+                  </a>
+                </div>
                 {userParty.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex justify-center space-x-4">
                     {userParty.map((hero) => (
-                      <div key={hero.id} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center space-x-3">
-                          {hero.avatar_url && (
-                            <img 
-                              src={hero.avatar_url} 
-                              alt={hero.name}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-800">{hero.name}</h4>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
-                              {hero.race && <span>{hero.race}</span>}
-                              {hero.class && (
-                                <>
-                                  {hero.race && <span>•</span>}
-                                  <span>{hero.class}</span>
-                                </>
-                              )}
-                              {hero.level && (
-                                <>
-                                  <span>•</span>
-                                  <span>Level {hero.level}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                      <div key={hero.id} className="text-center">
+                        {hero.avatar_url && (
+                          <img 
+                            src={hero.avatar_url} 
+                            alt={hero.name}
+                            className="w-12 h-12 rounded-full object-cover mx-auto mb-1"
+                          />
+                        )}
+                        <p className="text-sm font-medium text-gray-800">{hero.name}</p>
                       </div>
                     ))}
                   </div>
