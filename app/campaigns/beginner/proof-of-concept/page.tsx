@@ -144,7 +144,10 @@ function CustomControls() {
   );
 }
 
-function DiceRoller() {
+function DiceRoller({ missionBriefingOpen, onDiceRoll }: { 
+  missionBriefingOpen: boolean; 
+  onDiceRoll: (roll: number) => void; 
+}) {
   const [diceValue, setDiceValue] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
 
@@ -154,6 +157,11 @@ function DiceRoller() {
       const roll = Math.floor(Math.random() * 20) + 1;
       setDiceValue(roll);
       setIsRolling(false);
+      
+      // If mission briefing is open, pass the roll to it
+      if (missionBriefingOpen) {
+        onDiceRoll(roll);
+      }
     }, 300);
   };
 
@@ -279,6 +287,7 @@ interface ChatBox {
   streamingContent: string;
   currentSpeakerIndex?: number;
   partyMembers?: Hero[];
+  inputValue: string;
 }
 
 export default function ProofOfConcept() {
@@ -464,7 +473,8 @@ export default function ProofOfConcept() {
       isTyping: false,
       streamingContent: '',
       currentSpeakerIndex: 0,
-      partyMembers: allSpeakers
+      partyMembers: allSpeakers,
+      inputValue: ''
     };
     setChatBoxes(prev => [...prev.filter(box => box.id !== 'group-chat'), groupChatBox]);
   };
@@ -487,7 +497,8 @@ export default function ProofOfConcept() {
         size: { width: 300, height: 400 },
         isLocked: false,
         isTyping: false,
-        streamingContent: ''
+        streamingContent: '',
+        inputValue: ''
       };
       setChatBoxes(prev => [...prev, newChatBox]);
     }
@@ -728,6 +739,19 @@ export default function ProofOfConcept() {
     setChatBoxes(prev => prev.map(box => ({ ...box, isDragging: false, isResizing: false })));
   };
 
+  const handleDiceRoll = (roll: number) => {
+    // Add the dice roll only to the mission briefing input if it's open
+    if (missionBriefingOpen) {
+      setBriefingInput(prev => prev ? `${prev} [${roll}]` : `[${roll}]`);
+    }
+  };
+
+  const updateChatBoxInput = (heroId: string, value: string) => {
+    setChatBoxes(prev => prev.map(box => 
+      box.hero.id === heroId ? { ...box, inputValue: value } : box
+    ));
+  };
+
   const startResizing = (heroId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     const chatBox = chatBoxes.find(box => box.hero.id === heroId);
@@ -785,7 +809,7 @@ export default function ProofOfConcept() {
         <PartyAvatars onAvatarClick={onAvatarClick} />
       </ReactFlow>
 
-      <DiceRoller />
+      <DiceRoller missionBriefingOpen={missionBriefingOpen} onDiceRoll={handleDiceRoll} />
 
       {/* Chat Boxes */}
       {chatBoxes.map((chatBox) => (
@@ -797,6 +821,7 @@ export default function ProofOfConcept() {
           onStartDrag={(event) => startDragging(chatBox.hero.id, event)}
           onStartResize={(event) => startResizing(chatBox.hero.id, event)}
           onToggleLock={() => toggleLock(chatBox.hero.id)}
+          onInputChange={(value) => updateChatBoxInput(chatBox.hero.id, value)}
         />
       ))}
 
@@ -1147,7 +1172,8 @@ function ChatBoxComponent({
   onSendMessage, 
   onStartDrag,
   onStartResize,
-  onToggleLock
+  onToggleLock,
+  onInputChange
 }: {
   chatBox: ChatBox;
   onClose: () => void;
@@ -1155,8 +1181,8 @@ function ChatBoxComponent({
   onStartDrag: (event: React.MouseEvent) => void;
   onStartResize: (event: React.MouseEvent) => void;
   onToggleLock: () => void;
+  onInputChange: (value: string) => void;
 }) {
-  const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change or when typing
@@ -1166,8 +1192,8 @@ function ChatBoxComponent({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSendMessage(inputValue);
-    setInputValue('');
+    onSendMessage(chatBox.inputValue);
+    onInputChange('');
   };
 
   const isSmall = chatBox.size.width < 250 || chatBox.size.height < 250;
@@ -1354,8 +1380,8 @@ function ChatBoxComponent({
       <form onSubmit={handleSubmit} style={{ padding: dynamicStyles.padding, borderTop: '1px solid #e5e7eb' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: `${4 * scaleFactor}px` }}>
           <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={chatBox.inputValue}
+            onChange={(e) => onInputChange(e.target.value)}
             placeholder={`Talk to ${chatBox.hero.name}...`}
             style={{
               width: '100%',
@@ -1379,15 +1405,15 @@ function ChatBoxComponent({
           />
           <button
             type="submit"
-            disabled={!inputValue.trim()}
+            disabled={!chatBox.inputValue.trim()}
             style={{
               padding: dynamicStyles.buttonPadding,
-              backgroundColor: inputValue.trim() ? '#3b82f6' : '#d1d5db',
+              backgroundColor: chatBox.inputValue.trim() ? '#3b82f6' : '#d1d5db',
               color: 'white',
               border: 'none',
               borderRadius: `${6 * scaleFactor}px`,
               fontSize: dynamicStyles.fontSize,
-              cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+              cursor: chatBox.inputValue.trim() ? 'pointer' : 'not-allowed',
               alignSelf: 'flex-end',
               minWidth: `${50 * scaleFactor}px`
             }}
