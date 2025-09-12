@@ -260,8 +260,13 @@ interface ChatBox {
   id: string;
   hero: Hero;
   position: { x: number; y: number };
-  messages: { sender: 'user' | 'hero'; text: string }[];
+  messages: { sender: 'user' | 'hero'; text: string; id: string }[];
   isDragging: boolean;
+  isResizing: boolean;
+  size: { width: number; height: number };
+  isLocked: boolean;
+  isTyping: boolean;
+  streamingContent: string;
 }
 
 export default function ProofOfConcept() {
@@ -314,9 +319,14 @@ export default function ProofOfConcept() {
           y: 100 + chatBoxes.length * 50 
         },
         messages: [
-          { sender: 'hero', text: `Greetings! I'm ${hero.name}. How can I assist you on this mission?` }
+          { sender: 'hero', text: `Greetings! I'm ${hero.name}. How can I assist you on this mission?`, id: Date.now().toString() }
         ],
-        isDragging: false
+        isDragging: false,
+        isResizing: false,
+        size: { width: 300, height: 400 },
+        isLocked: false,
+        isTyping: false,
+        streamingContent: ''
       };
       setChatBoxes(prev => [...prev, newChatBox]);
     }
@@ -329,22 +339,20 @@ export default function ProofOfConcept() {
   const sendMessage = async (heroId: string, message: string) => {
     if (!message.trim()) return;
     
-    // Add user message immediately
+    const userMessage = { 
+      sender: 'user' as const, 
+      text: message, 
+      id: Date.now().toString() 
+    };
+    
+    // Add user message and start typing
     setChatBoxes(prev => prev.map(box => 
       box.hero.id === heroId 
         ? {
             ...box,
-            messages: [...box.messages, { sender: 'user', text: message }]
-          }
-        : box
-    ));
-
-    // Add typing indicator
-    setChatBoxes(prev => prev.map(box => 
-      box.hero.id === heroId 
-        ? {
-            ...box,
-            messages: [...box.messages, { sender: 'hero', text: '...' }]
+            messages: [...box.messages, userMessage],
+            isTyping: true,
+            streamingContent: ''
           }
         : box
     ));
@@ -354,13 +362,10 @@ export default function ProofOfConcept() {
       const chatHistory = chatBoxes.find(box => box.hero.id === heroId)?.messages || [];
       
       // Convert chat history to API format
-      const messages = chatHistory
-        .filter(msg => msg.text !== '...') // Exclude typing indicator
-        .map(msg => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text
-        }))
-        .concat([{ role: 'user', content: message }]);
+      const messages = chatHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
+      })).concat([{ role: 'user', content: message }]);
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -371,25 +376,75 @@ export default function ProofOfConcept() {
         })
       });
 
-      const responseText = await response.text();
-      
-      // Replace typing indicator with actual response
-      setChatBoxes(prev => prev.map(box => 
-        box.hero.id === heroId 
-          ? {
-              ...box,
-              messages: box.messages.slice(0, -1).concat({ sender: 'hero', text: responseText || 'I apologize, but I cannot respond right now.' })
-            }
-          : box
-      ));
+      if (response.ok) {
+        const data = await response.text();
+        
+        // Stop typing and start streaming effect
+        setChatBoxes(prev => prev.map(box => 
+          box.hero.id === heroId 
+            ? { ...box, isTyping: false, streamingContent: '' }
+            : box
+        ));
+        
+        // Add empty assistant message
+        const assistantMessage = {
+          sender: 'hero' as const,
+          text: '',
+          id: (Date.now() + 1).toString()
+        };
+        
+        setChatBoxes(prev => prev.map(box => 
+          box.hero.id === heroId 
+            ? { ...box, messages: [...box.messages, assistantMessage] }
+            : box
+        ));
+        
+        // Simulate streaming by showing words gradually
+        const words = data.split(' ');
+        let displayedContent = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          displayedContent += (i > 0 ? ' ' : '') + words[i];
+          
+          setChatBoxes(prev => prev.map(box => 
+            box.hero.id === heroId 
+              ? {
+                  ...box,
+                  streamingContent: displayedContent,
+                  messages: box.messages.map(msg => 
+                    msg.id === assistantMessage.id 
+                      ? { ...msg, text: displayedContent }
+                      : msg
+                  )
+                }
+              : box
+          ));
+          
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        // Clear streaming content
+        setChatBoxes(prev => prev.map(box => 
+          box.hero.id === heroId 
+            ? { ...box, streamingContent: '' }
+            : box
+        ));
+      } else {
+        throw new Error(`API call failed: ${response.status}`);
+      }
     } catch (error) {
       console.error('Chat error:', error);
-      // Replace typing indicator with error message
       setChatBoxes(prev => prev.map(box => 
         box.hero.id === heroId 
           ? {
               ...box,
-              messages: box.messages.slice(0, -1).concat({ sender: 'hero', text: 'Sorry, I seem to be having trouble responding right now.' })
+              isTyping: false,
+              streamingContent: '',
+              messages: [...box.messages, {
+                sender: 'hero' as const,
+                text: 'Sorry, I seem to be having trouble responding right now.',
+                id: (Date.now() + 1).toString()
+              }]
             }
           : box
       ));
@@ -398,7 +453,7 @@ export default function ProofOfConcept() {
 
   const startDragging = (heroId: string, event: React.MouseEvent) => {
     const chatBox = chatBoxes.find(box => box.hero.id === heroId);
-    if (chatBox) {
+    if (chatBox && !chatBox.isLocked) {
       setDragOffset({
         x: event.clientX - chatBox.position.x,
         y: event.clientY - chatBox.position.y
@@ -409,8 +464,16 @@ export default function ProofOfConcept() {
     }
   };
 
+  const toggleLock = (heroId: string) => {
+    setChatBoxes(prev => prev.map(box =>
+      box.hero.id === heroId ? { ...box, isLocked: !box.isLocked } : box
+    ));
+  };
+
   const handleMouseMove = (event: React.MouseEvent) => {
     const draggingBox = chatBoxes.find(box => box.isDragging);
+    const resizingBox = chatBoxes.find(box => box.isResizing);
+    
     if (draggingBox) {
       setChatBoxes(prev => prev.map(box =>
         box.isDragging
@@ -424,10 +487,38 @@ export default function ProofOfConcept() {
           : box
       ));
     }
+    
+    if (resizingBox) {
+      setChatBoxes(prev => prev.map(box =>
+        box.isResizing
+          ? {
+              ...box,
+              size: {
+                width: Math.max(200, event.clientX - dragOffset.x),
+                height: Math.max(200, event.clientY - dragOffset.y)
+              }
+            }
+          : box
+      ));
+    }
   };
 
   const stopDragging = () => {
-    setChatBoxes(prev => prev.map(box => ({ ...box, isDragging: false })));
+    setChatBoxes(prev => prev.map(box => ({ ...box, isDragging: false, isResizing: false })));
+  };
+
+  const startResizing = (heroId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const chatBox = chatBoxes.find(box => box.hero.id === heroId);
+    if (chatBox) {
+      setDragOffset({
+        x: event.clientX - chatBox.size.width,
+        y: event.clientY - chatBox.size.height
+      });
+      setChatBoxes(prev => prev.map(box =>
+        box.hero.id === heroId ? { ...box, isResizing: true } : box
+      ));
+    }
   };
  
   const onNodesChange = useCallback(
@@ -444,11 +535,18 @@ export default function ProofOfConcept() {
   );
  
   return (
-    <div 
-      style={{ width: '100vw', height: '100vh', position: 'relative', pointerEvents: 'none' }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={stopDragging}
-    >
+    <>
+      <style>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
+      <div 
+        style={{ width: '100vw', height: '100vh', position: 'relative', pointerEvents: 'none' }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={stopDragging}
+      >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -474,6 +572,8 @@ export default function ProofOfConcept() {
           onClose={() => closeChatBox(chatBox.hero.id)}
           onSendMessage={(message) => sendMessage(chatBox.hero.id, message)}
           onStartDrag={(event) => startDragging(chatBox.hero.id, event)}
+          onStartResize={(event) => startResizing(chatBox.hero.id, event)}
+          onToggleLock={() => toggleLock(chatBox.hero.id)}
         />
       ))}
 
@@ -558,7 +658,8 @@ export default function ProofOfConcept() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -566,12 +667,16 @@ function ChatBoxComponent({
   chatBox, 
   onClose, 
   onSendMessage, 
-  onStartDrag 
+  onStartDrag,
+  onStartResize,
+  onToggleLock
 }: {
   chatBox: ChatBox;
   onClose: () => void;
   onSendMessage: (message: string) => void;
   onStartDrag: (event: React.MouseEvent) => void;
+  onStartResize: (event: React.MouseEvent) => void;
+  onToggleLock: () => void;
 }) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -590,81 +695,117 @@ function ChatBoxComponent({
     setInputValue('');
   };
 
+  const isSmall = chatBox.size.width < 250 || chatBox.size.height < 250;
+  const isTiny = chatBox.size.width < 200 || chatBox.size.height < 200;
+  const scaleFactor = isTiny ? 0.7 : isSmall ? 0.85 : 1;
+  
+  const dynamicStyles = {
+    fontSize: `${13 * scaleFactor}px`,
+    padding: `${12 * scaleFactor}px`,
+    headerPadding: `${12 * scaleFactor}px ${16 * scaleFactor}px`,
+    avatarSize: `${24 * scaleFactor}px`,
+    inputPadding: `${6 * scaleFactor}px ${10 * scaleFactor}px`,
+    buttonPadding: `${6 * scaleFactor}px ${12 * scaleFactor}px`,
+    resizeHandle: `${16 * scaleFactor}px`
+  };
+
   return (
     <div
       style={{
         position: 'absolute',
         left: chatBox.position.x,
         top: chatBox.position.y,
-        width: '300px',
+        width: chatBox.size.width,
+        height: chatBox.size.height,
         backgroundColor: 'white',
         borderRadius: '12px',
         boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
         border: '1px solid #e5e7eb',
         zIndex: 50,
         cursor: chatBox.isDragging ? 'grabbing' : 'default',
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        opacity: chatBox.isLocked ? 0.9 : 1
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: '12px 16px',
+          padding: dynamicStyles.headerPadding,
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          cursor: 'grab',
-          backgroundColor: '#f9fafb',
+          cursor: chatBox.isLocked ? 'default' : 'grab',
+          backgroundColor: chatBox.isLocked ? '#fef3c7' : '#f9fafb',
           borderRadius: '12px 12px 0 0'
         }}
-        onMouseDown={onStartDrag}
+        onMouseDown={chatBox.isLocked ? undefined : onStartDrag}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: `${8 * scaleFactor}px` }}>
           {chatBox.hero.avatar_url && (
             <img
               src={chatBox.hero.avatar_url}
               alt={chatBox.hero.name}
               style={{
-                width: '24px',
-                height: '24px',
+                width: dynamicStyles.avatarSize,
+                height: dynamicStyles.avatarSize,
                 borderRadius: '50%',
                 objectFit: 'cover'
               }}
             />
           )}
-          <span style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+          <span style={{ fontWeight: '600', fontSize: dynamicStyles.fontSize, color: '#111827' }}>
             {chatBox.hero.name}
           </span>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '16px',
-            color: '#9ca3af',
-            cursor: 'pointer',
-            padding: '0',
-            width: '20px',
-            height: '20px'
-          }}
-        >
-          ×
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: `${4 * scaleFactor}px` }}>
+          <button
+            onClick={onToggleLock}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: `${14 * scaleFactor}px`,
+              color: chatBox.isLocked ? '#f59e0b' : '#9ca3af',
+              cursor: 'pointer',
+              padding: '0',
+              width: `${20 * scaleFactor}px`,
+              height: `${20 * scaleFactor}px`
+            }}
+            title={chatBox.isLocked ? 'Unlock' : 'Lock position'}
+          >
+            {chatBox.isLocked ? '🔒' : '🔓'}
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: `${16 * scaleFactor}px`,
+              color: '#9ca3af',
+              cursor: 'pointer',
+              padding: '0',
+              width: `${20 * scaleFactor}px`,
+              height: `${20 * scaleFactor}px`
+            }}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
       <div style={{
-        height: '200px',
+        flex: 1,
         overflowY: 'auto',
-        padding: '12px'
+        padding: dynamicStyles.padding
       }}>
         {chatBox.messages.map((message, index) => (
           <div
-            key={index}
+            key={message.id || index}
             style={{
-              marginBottom: '8px',
+              marginBottom: `${8 * scaleFactor}px`,
               display: 'flex',
               justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start'
             }}
@@ -672,9 +813,9 @@ function ChatBoxComponent({
             <div
               style={{
                 maxWidth: '80%',
-                padding: '8px 12px',
-                borderRadius: '12px',
-                fontSize: '13px',
+                padding: `${8 * scaleFactor}px ${12 * scaleFactor}px`,
+                borderRadius: `${12 * scaleFactor}px`,
+                fontSize: dynamicStyles.fontSize,
                 backgroundColor: message.sender === 'user' ? '#e5e7eb' : '#f3f4f6',
                 color: message.sender === 'user' ? '#374151' : '#374151'
               }}
@@ -683,44 +824,123 @@ function ChatBoxComponent({
             </div>
           </div>
         ))}
+        {chatBox.isTyping && (
+          <div style={{
+            marginBottom: `${8 * scaleFactor}px`,
+            display: 'flex',
+            justifyContent: 'flex-start'
+          }}>
+            <div style={{
+              maxWidth: '80%',
+              padding: `${8 * scaleFactor}px ${12 * scaleFactor}px`,
+              borderRadius: `${12 * scaleFactor}px`,
+              fontSize: dynamicStyles.fontSize,
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              display: 'flex',
+              alignItems: 'center',
+              gap: `${4 * scaleFactor}px`
+            }}>
+              <div style={{ display: 'flex', gap: `${2 * scaleFactor}px` }}>
+                <div style={{
+                  width: `${4 * scaleFactor}px`,
+                  height: `${4 * scaleFactor}px`,
+                  backgroundColor: '#9ca3af',
+                  borderRadius: '50%',
+                  animation: 'blink 1.4s infinite'
+                }} />
+                <div style={{
+                  width: `${4 * scaleFactor}px`,
+                  height: `${4 * scaleFactor}px`,
+                  backgroundColor: '#9ca3af',
+                  borderRadius: '50%',
+                  animation: 'blink 1.4s infinite',
+                  animationDelay: '0.2s'
+                }} />
+                <div style={{
+                  width: `${4 * scaleFactor}px`,
+                  height: `${4 * scaleFactor}px`,
+                  backgroundColor: '#9ca3af',
+                  borderRadius: '50%',
+                  animation: 'blink 1.4s infinite',
+                  animationDelay: '0.4s'
+                }} />
+              </div>
+              <span style={{ fontSize: `${11 * scaleFactor}px`, color: '#6b7280' }}>
+                {chatBox.hero.name} is thinking...
+              </span>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} style={{ padding: '12px', borderTop: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
+      <form onSubmit={handleSubmit} style={{ padding: dynamicStyles.padding, borderTop: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: `${4 * scaleFactor}px` }}>
+          <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={`Talk to ${chatBox.hero.name}...`}
             style={{
-              flex: 1,
-              padding: '6px 10px',
+              width: '100%',
+              minHeight: `${30 * scaleFactor}px`,
+              maxHeight: `${60 * scaleFactor}px`,
+              padding: dynamicStyles.inputPadding,
               border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '13px',
+              borderRadius: `${6 * scaleFactor}px`,
+              fontSize: dynamicStyles.fontSize,
               outline: 'none',
-              color: '#374151'
+              color: '#374151',
+              resize: 'none',
+              fontFamily: 'inherit'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e as any);
+              }
             }}
           />
           <button
             type="submit"
             disabled={!inputValue.trim()}
             style={{
-              padding: '6px 12px',
+              padding: dynamicStyles.buttonPadding,
               backgroundColor: inputValue.trim() ? '#3b82f6' : '#d1d5db',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              fontSize: '13px',
-              cursor: inputValue.trim() ? 'pointer' : 'not-allowed'
+              borderRadius: `${6 * scaleFactor}px`,
+              fontSize: dynamicStyles.fontSize,
+              cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+              alignSelf: 'flex-end',
+              minWidth: `${50 * scaleFactor}px`
             }}
           >
-            Send
+            {isTiny ? '→' : 'Send'}
           </button>
         </div>
       </form>
+
+      {/* Resize Handle */}
+      {!chatBox.isLocked && (
+        <div
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            onStartResize(e);
+          }}
+          style={{
+            position: 'absolute',
+            bottom: '0',
+            right: '0',
+            width: dynamicStyles.resizeHandle,
+            height: dynamicStyles.resizeHandle,
+            cursor: 'se-resize',
+            background: 'linear-gradient(-45deg, transparent 30%, #d1d5db 30%, #d1d5db 50%, transparent 50%)',
+            borderBottomRightRadius: '12px'
+          }}
+        />
+      )}
     </div>
   );
 }
