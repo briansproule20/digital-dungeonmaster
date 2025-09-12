@@ -11,12 +11,22 @@ interface Hero {
   avatar_url?: string;
 }
 
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  duration: string;
+  difficulty: string;
+  preview: string;
+  path: string;
+}
+
 export default function BeginnerCampaigns() {
   const [showModal, setShowModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [userParty, setUserParty] = useState<Hero[]>([]);
 
-  const campaigns = [
+  const campaigns: Campaign[] = [
     {
       id: 'proof-of-concept',
       name: 'Proof of Concept',
@@ -41,7 +51,7 @@ export default function BeginnerCampaigns() {
     }
   }, []);
 
-  const openModal = (campaign) => {
+  const openModal = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setShowModal(true);
   };
