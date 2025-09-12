@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection } from '@xyflow/react';
+import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
  
-const initialNodes = [
+const initialNodes: Node[] = [
   { 
     id: 'node1', 
     position: { x: 200, y: 100 }, 
@@ -43,7 +43,7 @@ const initialNodes = [
   },
 ];
 
-const initialEdges = [
+const initialEdges: Edge[] = [
   { id: 'node1-node3', source: 'node1', target: 'node3' },
   { id: 'node1-node4', source: 'node1', target: 'node4' },
   { id: 'node2-node4', source: 'node2', target: 'node4' },
@@ -52,8 +52,8 @@ const initialEdges = [
 ];
  
 export default function ProofOfConcept() {
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  const [nodes, setNodes] = useState<Node[]>(initialNodes);
+  const [edges, setEdges] = useState<Edge[]>(initialEdges);
  
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
