@@ -402,18 +402,6 @@ export default function ProofOfConcept() {
   const [bridgeInput, setBridgeInput] = useState('');
   const bridgeMessagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Shared campaign memory for cross-area continuity
-  const [campaignMemory, setCampaignMemory] = useState<{
-    events: Array<{area: string; event: string; timestamp: number}>;
-    discoveries: Array<{item: string; location: string; timestamp: number}>;
-    relationships: Array<{character: string; relationship: string; timestamp: number}>;
-    decisions: Array<{decision: string; area: string; timestamp: number}>;
-  }>({
-    events: [],
-    discoveries: [],
-    relationships: [],
-    decisions: []
-  });
 
   // Campaign chat persistence functions
   const saveCampaignChat = (area: string, messages: any[]) => {
@@ -430,41 +418,29 @@ export default function ProofOfConcept() {
 
   const clearCampaignChat = () => {
     localStorage.removeItem('campaignChat');
-    localStorage.removeItem('campaignMemory');
   };
 
-  // Campaign memory management functions
-  const addCampaignEvent = (area: string, event: string) => {
-    console.log(`Adding campaign event: ${area} - ${event}`);
-    setCampaignMemory(prev => {
-      const newMemory = {
-        ...prev,
-        events: [...prev.events, { area, event, timestamp: Date.now() }]
-      };
-      console.log('New campaign memory:', newMemory);
-      return newMemory;
-    });
-  };
 
-  const addCampaignDiscovery = (item: string, location: string) => {
-    setCampaignMemory(prev => ({
-      ...prev,
-      discoveries: [...prev.discoveries, { item, location, timestamp: Date.now() }]
-    }));
-  };
+  const generateMissionBriefing = () => {
+    return `**MISSION BRIEFING:**
 
-  const addCampaignRelationship = (character: string, relationship: string) => {
-    setCampaignMemory(prev => ({
-      ...prev,
-      relationships: [...prev.relationships, { character, relationship, timestamp: Date.now() }]
-    }));
-  };
+**Primary Objective:** Investigate the silent research vessel that went dark 72 hours ago near Kepler Station. Determine what happened to the crew and report back to Mission Control.
 
-  const addCampaignDecision = (decision: string, area: string) => {
-    setCampaignMemory(prev => ({
-      ...prev,
-      decisions: [...prev.decisions, { decision, area, timestamp: Date.now() }]
-    }));
+**Current Situation:** You are aboard your own ship, approaching the mysterious research vessel. Communication was lost with the research vessel, and you are the rescue team sent to investigate.
+
+**Available Investigation Areas:**
+• **Medical Bay** - Check for survivors, examine medical equipment and records
+• **Armory** - Assess weapons and security systems, check for signs of conflict
+• **Captain's Quarters** - Search for logs, personal effects, and clues about what happened
+• **Bridge** - Access ship systems, communications, and face whatever threat awaits
+
+**Important Notes:**
+- Trust no one - something is very wrong on this vessel
+- The crew disappeared without warning
+- Your mission is to investigate, not to engage unless necessary
+- Report findings back to Mission Control when possible
+
+**Current Status:** You have just arrived at the research vessel and are preparing to board.`;
   };
 
   const generateCampaignContext = () => {
@@ -545,69 +521,6 @@ export default function ProofOfConcept() {
     return campaignMessages;
   };
 
-  // Function to extract campaign events from hero responses
-  const extractCampaignEvents = (heroResponse: string, area: string) => {
-    console.log(`Extracting events from hero response in ${area}:`, heroResponse);
-    
-    // Look for discovery patterns - more comprehensive
-    const discoveryPatterns = [
-      /(?:found|discovered|located|spotted|noticed|seen) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:there is|there's|there are|there're) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:i see|we see|looks like|appears to be) (.+?)(?:\.|,|!|\?|$)/gi
-    ];
-    
-    discoveryPatterns.forEach(pattern => {
-      const matches = heroResponse.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          const item = match.replace(/(?:found|discovered|located|spotted|noticed|seen|there is|there's|there are|there're|i see|we see|looks like|appears to be)/gi, '').replace(/\.|,|!|\?/gi, '').trim();
-          if (item.length > 2 && item.length < 100) {
-            addCampaignDiscovery(item, area);
-          }
-        });
-      }
-    });
-
-    // Look for decision patterns - more comprehensive
-    const decisionPatterns = [
-      /(?:we should|let's|i suggest|i think we need|i propose|i recommend) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:we need to|we must|we have to|we ought to) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:maybe we|perhaps we|i think we) (.+?)(?:\.|,|!|\?|$)/gi
-    ];
-    
-    decisionPatterns.forEach(pattern => {
-      const matches = heroResponse.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          const decision = match.replace(/(?:we should|let's|i suggest|i think we need|i propose|i recommend|we need to|we must|we have to|we ought to|maybe we|perhaps we|i think we)/gi, '').replace(/\.|,|!|\?/gi, '').trim();
-          if (decision.length > 5 && decision.length < 100) {
-            addCampaignDecision(decision, area);
-          }
-        });
-      }
-    });
-
-    // Look for event patterns - more comprehensive
-    const eventPatterns = [
-      /(?:something happened|there was|i saw|we encountered|we found|we discovered) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:the situation|what occurred|the incident|what happened|what we found) (.+?)(?:\.|,|!|\?|$)/gi,
-      /(?:strange|weird|concerning|alarming|troubling) (.+?)(?:\.|,|!|\?|$)/gi
-    ];
-    
-    eventPatterns.forEach(pattern => {
-      const matches = heroResponse.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          const event = match.replace(/(?:something happened|there was|i saw|we encountered|we found|we discovered|the situation|what occurred|the incident|what happened|what we found|strange|weird|concerning|alarming|troubling)/gi, '').replace(/\.|,|!|\?/gi, '').trim();
-          if (event.length > 5 && event.length < 100) {
-            addCampaignEvent(area, event);
-          }
-        });
-      }
-    });
-    
-    console.log('Campaign memory after extraction:', campaignMemory);
-  };
 
   const startNewCampaign = () => {
     const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\n• Mission briefing conversations\n• Medical Bay conversations\n• Armory conversations\n• Captain's Quarters conversations\n• Bridge/Boss Battle conversations\n• Individual hero chats\n• All chat history and progress\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
@@ -627,14 +540,6 @@ export default function ProofOfConcept() {
       setBridgeMessages([]);
       setBridgeParty([]);
       setChatBoxes([]);
-      
-      // Clear campaign memory
-      setCampaignMemory({
-        events: [],
-        discoveries: [],
-        relationships: [],
-        decisions: []
-      });
       
       // Close all modals
       setMissionBriefingOpen(false);
@@ -796,13 +701,8 @@ export default function ProofOfConcept() {
     }
   }, [chatBoxes]);
 
-  // Save campaign memory to localStorage whenever it changes
-  useEffect(() => {
-    console.log('Saving campaign memory:', campaignMemory);
-    localStorage.setItem('campaignMemory', JSON.stringify(campaignMemory));
-  }, [campaignMemory]);
 
-  // Load saved chat data and campaign memory on component mount
+  // Load saved chat data on component mount
   useEffect(() => {
     // Don't automatically restore individual chat boxes on page refresh
     // Individual hero chats should only appear when explicitly opened by the user
@@ -810,21 +710,6 @@ export default function ProofOfConcept() {
     // if (savedIndividualChats.length > 0) {
     //   setChatBoxes(savedIndividualChats);
     // }
-
-    // Load campaign memory
-    const savedMemory = localStorage.getItem('campaignMemory');
-    console.log('Saved memory from localStorage:', savedMemory);
-    if (savedMemory) {
-      try {
-        const parsedMemory = JSON.parse(savedMemory);
-        console.log('Parsed memory:', parsedMemory);
-        setCampaignMemory(parsedMemory);
-      } catch (error) {
-        console.error('Failed to parse saved campaign memory:', error);
-      }
-    } else {
-      console.log('No saved campaign memory found');
-    }
   }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
@@ -854,9 +739,6 @@ export default function ProofOfConcept() {
                 speaker: 'Mission Control'
               }
             ]);
-            
-            // Log the mission briefing as a campaign event
-            addCampaignEvent('Mission Briefing', 'Team assembled for urgent mission to investigate silent research vessel');
         }
         
         setMissionBriefingOpen(true);
@@ -878,9 +760,6 @@ export default function ProofOfConcept() {
         }
         
         setMedicalBayOpen(true);
-        
-        // Log medical bay access as a campaign event
-        addCampaignEvent('Medical Bay', 'Team accessed medical bay for investigation');
       } else if (node.id === 'node3') { // Armory
         setArmoryParty(party);
         
@@ -899,9 +778,6 @@ export default function ProofOfConcept() {
         }
         
         setArmoryOpen(true);
-        
-        // Log armory access as a campaign event
-        addCampaignEvent('Armory', 'Team accessed armory for equipment and investigation');
       } else if (node.id === 'node4') { // Captain's Quarters
         setCaptainsQuartersParty(party);
         
@@ -920,9 +796,6 @@ export default function ProofOfConcept() {
         }
         
         setCaptainsQuartersOpen(true);
-        
-        // Log captain's quarters access as a campaign event
-        addCampaignEvent('Captain\'s Quarters', 'Team accessed captain\'s quarters for investigation');
       } else if (node.id === 'node5') { // Bridge/Boss Battle
         setBridgeParty(party);
         
@@ -941,9 +814,6 @@ export default function ProofOfConcept() {
         }
         
         setBridgeOpen(true);
-        
-        // Log bridge access as a campaign event
-        addCampaignEvent('Bridge', 'Team accessed bridge for final confrontation');
       } else {
         setSelectedNode(node);
       }
@@ -1008,6 +878,7 @@ export default function ProofOfConcept() {
         'bridge': 'on the bridge facing the final confrontation with the unknown threat'
       };
 
+      const missionBriefing = generateMissionBriefing();
       const campaignContext = generateCampaignContext();
       
       console.log(`DEBUG: Generating system prompt for hero: ${hero.name} (${hero.id})`);
@@ -1022,6 +893,8 @@ BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
 PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
 
 APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
+
+${missionBriefing}
 
 You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. Keep responses engaging but concise (2-3 sentences max).
 
@@ -1084,9 +957,6 @@ CHARACTER IDENTITY: You are ONLY ${hero.name}. Do NOT respond as other character
           
           await new Promise(resolve => setTimeout(resolve, 50));
         }
-        
-        // Extract campaign events from the complete response
-        extractCampaignEvents(data, area);
       } else {
         throw new Error(`API call failed: ${response.status}`);
       }
