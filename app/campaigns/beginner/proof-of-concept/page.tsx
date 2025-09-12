@@ -1,8 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+
+interface Hero {
+  id: string;
+  name: string;
+  class?: string;
+  race?: string;
+  level?: number;
+  avatar_url?: string;
+}
  
 const initialNodes: Node[] = [
   { 
@@ -165,6 +174,78 @@ function DiceRoller() {
     </div>
   );
 }
+
+function PartyAvatars() {
+  const [userParty, setUserParty] = useState<Hero[]>([]);
+
+  useEffect(() => {
+    const savedParty = localStorage.getItem('myParty');
+    if (savedParty) {
+      try {
+        const party = JSON.parse(savedParty);
+        setUserParty(party);
+      } catch (error) {
+        console.error('Failed to parse saved party:', error);
+      }
+    }
+  }, []);
+
+  if (userParty.length === 0) return null;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '12px',
+      left: '12px',
+      display: 'flex',
+      gap: '8px',
+      zIndex: 1000
+    }}>
+      {userParty.map((hero, index) => (
+        <div
+          key={hero.id}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: '2px solid #fff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            backgroundColor: '#f3f4f6',
+            marginLeft: index > 0 ? '-8px' : '0',
+            position: 'relative',
+            zIndex: userParty.length - index
+          }}
+        >
+          {hero.avatar_url ? (
+            <img
+              src={hero.avatar_url}
+              alt={hero.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#6b7280'
+            }}>
+              {hero.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
  
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -196,6 +277,7 @@ export default function ProofOfConcept() {
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls />
         <DiceRoller />
+        <PartyAvatars />
       </ReactFlow>
     </div>
   );
