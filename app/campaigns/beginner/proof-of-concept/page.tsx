@@ -74,7 +74,7 @@ const initialEdges: Edge[] = [
   { id: 'node4-node5', source: 'node4', target: 'node5' },
 ];
 
-function CustomControls() {
+function CustomControls({ onStartNewCampaign }: { onStartNewCampaign: () => void }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   return (
@@ -144,6 +144,27 @@ function CustomControls() {
         }}
       >
         ⌂
+      </button>
+      <button
+        onClick={onStartNewCampaign}
+        style={{
+          width: 'auto',
+          height: '24px',
+          backgroundColor: '#ef4444',
+          border: '1px solid #dc2626',
+          borderRadius: '2px',
+          cursor: 'pointer',
+          fontSize: '10px',
+          fontWeight: 'bold',
+          color: 'white',
+          padding: '0 6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        title="Start New Campaign (Clears all chat history)"
+      >
+        NEW
       </button>
     </div>
   );
@@ -337,10 +358,62 @@ export default function ProofOfConcept() {
   const [briefingInput, setBriefingInput] = useState('');
   const briefingMessagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Campaign chat persistence functions
+  const saveCampaignChat = (area: string, messages: any[]) => {
+    const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
+    campaignChat[area] = messages;
+    campaignChat.lastUpdated = Date.now();
+    localStorage.setItem('campaignChat', JSON.stringify(campaignChat));
+  };
+
+  const loadCampaignChat = (area: string) => {
+    const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
+    return campaignChat[area] || [];
+  };
+
+  const clearCampaignChat = () => {
+    localStorage.removeItem('campaignChat');
+  };
+
+  const startNewCampaign = () => {
+    const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\n• Mission briefing conversations\n• Individual hero chats\n• All chat history and progress\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
+    
+    if (confirm(confirmMessage)) {
+      clearCampaignChat();
+      setBriefingMessages([]);
+      setBriefingParty([]);
+      setChatBoxes([]);
+      setMissionBriefingOpen(false);
+      setSelectedNode(null);
+    }
+  };
+
   // Auto-scroll to bottom when briefing messages change or when typing
   useEffect(() => {
     briefingMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [briefingMessages, briefingTyping]);
+
+  // Save briefing messages to localStorage whenever they change
+  useEffect(() => {
+    if (briefingMessages.length > 0) {
+      saveCampaignChat('missionBriefing', briefingMessages);
+    }
+  }, [briefingMessages]);
+
+  // Save individual chat boxes to localStorage whenever they change
+  useEffect(() => {
+    if (chatBoxes.length > 0) {
+      saveCampaignChat('individualChats', chatBoxes);
+    }
+  }, [chatBoxes]);
+
+  // Load saved chat data on component mount
+  useEffect(() => {
+    const savedIndividualChats = loadCampaignChat('individualChats');
+    if (savedIndividualChats.length > 0) {
+      setChatBoxes(savedIndividualChats);
+    }
+  }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
     if (node.id === 'node1') { // Mission Briefing
@@ -350,14 +423,24 @@ export default function ProofOfConcept() {
         try {
           const party: Hero[] = JSON.parse(savedParty);
           setBriefingParty(party);
-          setBriefingMessages([
-            {
-              sender: 'hero',
-              text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
-              id: Date.now().toString(),
-              speaker: 'Mission Control'
-            }
-          ]);
+          
+          // Load existing chat history or create initial message
+          const savedMessages = loadCampaignChat('missionBriefing');
+          if (savedMessages.length > 0) {
+            // Load existing chat history
+            setBriefingMessages(savedMessages);
+          } else {
+            // Create initial mission briefing message
+            setBriefingMessages([
+              {
+                sender: 'hero',
+                text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\nYour crew consists of: ${party.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nThe vessel was last seen near the Kepler Station. Communication was lost 72 hours ago. Your mission: board the vessel, investigate, and report back.`,
+                id: Date.now().toString(),
+                speaker: 'Mission Control'
+              }
+            ]);
+          }
+          
           setMissionBriefingOpen(true);
           return;
         } catch (error) {
@@ -832,7 +915,7 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
         elementsSelectable={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
-        <CustomControls />
+        <CustomControls onStartNewCampaign={startNewCampaign} />
         <PartyAvatars onAvatarClick={onAvatarClick} />
       </ReactFlow>
 
