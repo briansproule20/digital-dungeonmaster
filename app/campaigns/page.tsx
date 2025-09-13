@@ -29,7 +29,7 @@ function CampaignsContent() {
     fetchUser();
     
     // Check if coming from party page
-    const fromPartyParam = searchParams.get('fromParty');
+    const fromPartyParam = searchParams?.get('fromParty');
     setFromParty(fromPartyParam === 'true');
     
     // Load party from localStorage

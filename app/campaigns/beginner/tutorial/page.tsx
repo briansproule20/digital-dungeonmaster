@@ -1235,7 +1235,7 @@ ${campaignContext}`;
           if (recentMessages.length < 4 && partyMembers.length > 1) {
             // Trigger next character after short delay
             setTimeout(() => {
-              handleChatMessage(heroId, `Continue the conversation based on what ${currentSpeaker.name} just said.`);
+              sendMessage(heroId, `Continue the conversation based on what ${currentSpeaker.name} just said.`);
             }, 2000);
           }
         } else {
