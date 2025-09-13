@@ -379,20 +379,139 @@ export default function ProofOfConcept() {
   const [showLockedModal, setShowLockedModal] = useState(false);
   const [lockedModuleName, setLockedModuleName] = useState<string>('');
   const [nodeToUnlock, setNodeToUnlock] = useState<string>('');
+  const [missionBriefingSummary, setMissionBriefingSummary] = useState<string>('');
+  const [missionBriefingCompleted, setMissionBriefingCompleted] = useState(false);
+  const [activeNode, setActiveNode] = useState<string>('node1'); // Default to Mission Briefing
   
+  // Function to generate mission briefing summary
+  const generateMissionBriefingSummary = async (messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
+    try {
+      // Extract key information from the mission briefing
+      const briefingText = messages.map(msg => {
+        if (msg.sender === 'hero' && msg.speaker === 'Narrator') {
+          return `Narrator: ${msg.text}`;
+        } else if (msg.sender === 'user') {
+          return `Player: ${msg.text}`;
+        } else if (msg.sender === 'hero') {
+          return `Hero: ${msg.text}`;
+        }
+        return msg.text;
+      }).join('\n\n');
+
+      // Create a summary prompt
+      const summaryPrompt = `Please create a concise summary of the mission briefing conversation below. Focus on:
+1. The mission objective
+2. Key information discovered
+3. Important decisions made by the party
+4. Current situation and next steps
+
+Mission Briefing Conversation:
+${briefingText}
+
+Please provide a clear, actionable summary that can be used as context for future areas of the campaign.`;
+
+      const response = await fetch('/api/generate-system-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: summaryPrompt,
+          context: 'mission_briefing_summary'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.prompt || 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+      } else {
+        // Fallback summary if API fails
+        return 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+      }
+    } catch (error) {
+      console.error('Failed to generate mission briefing summary:', error);
+      return 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+    }
+  };
+
   // Function to unlock modules based on progression
-  const unlockModules = (moduleIds: string[]) => {
+  const unlockModules = async (moduleIds: string[]) => {
     setUnlockedModules(prev => {
       const newSet = new Set(prev);
       moduleIds.forEach(id => newSet.add(id));
       return newSet;
     });
+
+    // Generate mission briefing summary if this is the first unlock after briefing
+    if (moduleIds.includes('node2') || moduleIds.includes('node3')) {
+      if (!missionBriefingCompleted && briefingMessages.length > 0) {
+        const summary = await generateMissionBriefingSummary(briefingMessages);
+        setMissionBriefingSummary(summary);
+        setMissionBriefingCompleted(true);
+        
+        // Save summary to localStorage
+        localStorage.setItem('missionBriefingSummary', summary);
+      }
+    }
+
+    // Implement branching path logic - Medical Bay and Armory are mutually exclusive
+    if (moduleIds.includes('node2')) {
+      // User chose Medical Bay path - lock out Armory
+      setNodes(prevNodes => 
+        prevNodes.map(node => {
+          if (node.id === 'node3') {
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                backgroundColor: '#fee2e2',
+                border: '2px solid #ef4444',
+                borderRadius: '6px',
+                color: '#dc2626',
+                opacity: 0.4
+              },
+              data: {
+                ...node.data,
+                label: '🚫 Armory (Path Locked)',
+                unlocked: false
+              }
+            };
+          }
+          return node;
+        })
+      );
+    } else if (moduleIds.includes('node3')) {
+      // User chose Armory path - lock out Medical Bay
+      setNodes(prevNodes => 
+        prevNodes.map(node => {
+          if (node.id === 'node2') {
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                backgroundColor: '#fee2e2',
+                border: '2px solid #ef4444',
+                borderRadius: '6px',
+                color: '#dc2626',
+                opacity: 0.4
+              },
+              data: {
+                ...node.data,
+                label: '🚫 Medical Bay (Path Locked)',
+                unlocked: false
+              }
+            };
+          }
+          return node;
+        })
+      );
+    }
     
-    // Update node styles to show unlocked state
+    // Update node styles to show unlocked state and permanently remove lock emoji
     setNodes(prevNodes => 
       prevNodes.map(node => {
         if (moduleIds.includes(node.id)) {
-          // Remove lock emoji and update styling
+          // Permanently remove lock emoji and update styling
           const label = node.data.label.replace('🔒 ', '');
           return {
             ...node,
@@ -401,6 +520,122 @@ export default function ProofOfConcept() {
           };
         }
         return node;
+      })
+    );
+  };
+
+  // Function to set active node and update highlighting
+  const setActiveNodeAndUpdate = (nodeId: string) => {
+    setActiveNode(nodeId);
+    saveUnlockProgress(); // Save progress whenever active node changes
+  };
+
+  // Function to save unlock progress
+  const saveUnlockProgress = () => {
+    const progressData = {
+      unlockedModules: Array.from(unlockedModules),
+      activeNode,
+      missionBriefingCompleted,
+      missionBriefingSummary
+    };
+    localStorage.setItem('campaignProgress', JSON.stringify(progressData));
+  };
+
+  // Function to load unlock progress
+  const loadUnlockProgress = () => {
+    try {
+      const savedProgress = localStorage.getItem('campaignProgress');
+      if (savedProgress) {
+        const progressData = JSON.parse(savedProgress);
+        setUnlockedModules(new Set(progressData.unlockedModules || ['node1']));
+        setActiveNode(progressData.activeNode || 'node1');
+        setMissionBriefingCompleted(progressData.missionBriefingCompleted || false);
+        setMissionBriefingSummary(progressData.missionBriefingSummary || '');
+        
+        // Also load from separate localStorage key for backward compatibility
+        const savedSummary = localStorage.getItem('missionBriefingSummary');
+        if (savedSummary) {
+          setMissionBriefingSummary(savedSummary);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load unlock progress:', error);
+    }
+  };
+
+  // Function to update node highlighting based on active node
+  const updateNodeHighlighting = () => {
+    setNodes(prevNodes => 
+      prevNodes.map(node => {
+        const isActive = node.id === activeNode;
+        const isUnlocked = unlockedModules.has(node.id);
+        const isCompleted = (node.id === 'node1' && missionBriefingCompleted) || 
+                           (node.id !== 'node1' && isUnlocked);
+        
+        // Always remove lock emoji from unlocked nodes
+        const label = isUnlocked ? node.data.label.replace('🔒 ', '') : node.data.label;
+        
+        if (isActive && isUnlocked) {
+          // Active node - bright highlight
+          return {
+            ...node,
+            data: { ...node.data, label, unlocked: isUnlocked },
+            style: {
+              ...node.style,
+              backgroundColor: '#fef3c7',
+              border: '3px solid #f59e0b',
+              borderRadius: '8px',
+              boxShadow: '0 0 15px rgba(245, 158, 11, 0.5)',
+              color: '#000',
+              opacity: 1
+            }
+          };
+        } else if (isCompleted) {
+          // Completed section - cool blue
+          return {
+            ...node,
+            data: { ...node.data, label, unlocked: isUnlocked },
+            style: {
+              ...node.style,
+              backgroundColor: '#dbeafe',
+              border: '2px solid #3b82f6',
+              borderRadius: '6px',
+              boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+              color: '#1e40af',
+              opacity: 1
+            }
+          };
+        } else if (isUnlocked) {
+          // Unlocked but not active - normal styling
+          return {
+            ...node,
+            data: { ...node.data, label, unlocked: isUnlocked },
+            style: {
+              ...node.style,
+              backgroundColor: '#ffffff',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              boxShadow: 'none',
+              color: '#000',
+              opacity: 1
+            }
+          };
+        } else {
+          // Locked node - dimmed styling
+          return {
+            ...node,
+            data: { ...node.data, label, unlocked: isUnlocked },
+            style: {
+              ...node.style,
+              backgroundColor: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '4px',
+              boxShadow: 'none',
+              color: '#666',
+              opacity: 0.6
+            }
+          };
+        }
       })
     );
   };
@@ -715,7 +950,13 @@ export default function ProofOfConcept() {
     if (confirm(confirmMessage)) {
       clearCampaignChat();
       
-      // Clear all chat areas
+      // Reset campaign progression states
+      setUnlockedModules(new Set(['node1'])); // Only Mission Briefing unlocked
+      setMissionBriefingCompleted(false);
+      setMissionBriefingSummary('');
+      setActiveNode('node1'); // Reset to Mission Briefing
+      
+      // Reset all chat areas
       setBriefingMessages([]);
       setBriefingParty([]);
       setMedicalBayMessages([]);
@@ -736,8 +977,56 @@ export default function ProofOfConcept() {
       setBridgeOpen(false);
       setSelectedNode(null);
       
-      // Force page refresh to ensure clean slate
-      window.location.reload();
+      // Reset nodes to original state with lock emojis
+      setNodes([
+        { 
+          id: 'instruction-text', 
+          position: { x: 400, y: -100 }, 
+          data: { label: 'Click Mission Briefing to begin' },
+          style: { color: '#9ca3af', fontSize: '14px', fontWeight: '500', backgroundColor: 'transparent', border: 'none' },
+          draggable: false,
+          selectable: false
+        },
+        { 
+          id: 'node1', 
+          position: { x: 400, y: 50 }, 
+          data: { label: 'Mission Briefing', unlocked: true },
+          style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#fef3c7', border: '3px solid #f59e0b', borderRadius: '8px', boxShadow: '0 0 15px rgba(245, 158, 11, 0.5)' },
+          draggable: false
+        },
+        { 
+          id: 'node2', 
+          position: { x: 200, y: 200 }, 
+          data: { label: '🔒 Medical Bay', unlocked: false },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          draggable: false
+        },
+        { 
+          id: 'node3', 
+          position: { x: 600, y: 200 }, 
+          data: { label: '🔒 Armory', unlocked: false },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          draggable: false
+        },
+        { 
+          id: 'node4', 
+          position: { x: 400, y: 350 }, 
+          data: { label: "🔒 Captain's Quarters", unlocked: false },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          draggable: false
+        },
+        { 
+          id: 'node5', 
+          position: { x: 400, y: 500 }, 
+          data: { label: '🔒 Boss Battle', unlocked: false },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          draggable: false
+        },
+      ]);
+      
+      // Clear localStorage campaign progress
+      localStorage.removeItem('campaignProgress');
+      localStorage.removeItem('missionBriefingSummary');
     }
   };
 
@@ -824,6 +1113,23 @@ export default function ProofOfConcept() {
     );
   };
 
+  // Load unlock progress on component mount
+  useEffect(() => {
+    loadUnlockProgress();
+  }, []);
+
+  // Update node highlighting when active node or unlocked modules change
+  useEffect(() => {
+    updateNodeHighlighting();
+  }, [activeNode, unlockedModules]);
+
+  // Save progress when state changes
+  useEffect(() => {
+    if (unlockedModules.size > 0) {
+      saveUnlockProgress();
+    }
+  }, [unlockedModules, activeNode, missionBriefingCompleted, missionBriefingSummary]);
+
   // Auto-scroll to bottom when briefing messages change or when typing
   useEffect(() => {
     briefingMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -904,6 +1210,12 @@ export default function ProofOfConcept() {
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
     console.log('Node clicked:', node.id, 'unlocked:', unlockedModules.has(node.id));
+    
+    // Ignore clicks on instruction node - it's just informational
+    if (node.id === 'instruction-text') {
+      return;
+    }
+    
     // Check if module is unlocked
     if (!unlockedModules.has(node.id)) {
       // Allow unlocking by clicking - show confirmation modal
@@ -913,6 +1225,9 @@ export default function ProofOfConcept() {
       setShowLockedModal(true);
       return;
     }
+
+    // Set active node when clicking on unlocked nodes
+    setActiveNodeAndUpdate(node.id);
     
     // Get user's party from localStorage, with campaign fallback
     let party: Hero[] = [];
@@ -1069,7 +1384,7 @@ PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'Y
 
 MISSION: You've awakened from cryosleep in a locked cargo hold aboard an unknown ship. Your memories are hazy, but you need to escape. The ship appears operational but you don't know where you are. Your objective: investigate, commandeer the ship, and escape. Work together with your party - your survival depends on it.
 
-CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.
+CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.${(missionBriefingCompleted && missionBriefingSummary && area !== 'missionBriefing') ? `\n\nMISSION BRIEFING SUMMARY: ${missionBriefingSummary}` : ''}
 
 D&D PLAYER RULES:
 - You are a PLAYER CHARACTER, not the DM
@@ -1285,14 +1600,6 @@ RESPONSE REQUIREMENTS:
     
     currentArea.setMessages(prev => [...prev, userMessage]);
     setInput('');
-    
-    // Check if Mission Briefing is completed and unlock other modules
-    if (area === 'missionBriefing') {
-      // Unlock Medical Bay and Armory after Mission Briefing
-      setTimeout(() => {
-        unlockModules(['node2', 'node3']);
-      }, 1000); // Small delay to let the message process
-    }
   };
 
   // Legacy function for backward compatibility
@@ -1739,7 +2046,14 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
               marginBottom: '24px',
               lineHeight: '1.5'
             }}>
-              This area is currently locked. Would you like to unlock it and explore this section of the ship?
+              {missionBriefingCompleted 
+                ? "This area is currently locked. Would you like to unlock it and explore this section of the ship?"
+                : nodeToUnlock === 'node2' 
+                  ? "This will finish the Mission Briefing and choose the Medical Bay path. This will lock out the Armory path permanently. The other path will be unavailable for this playthrough. Continue?"
+                  : nodeToUnlock === 'node3'
+                  ? "This will finish the Mission Briefing and choose the Armory path. This will lock out the Medical Bay path permanently. The other path will be unavailable for this playthrough. Continue?"
+                  : "This will finish the Mission Briefing section and unlock new areas. Your briefing conversation will be summarized and used as context for future areas. Continue?"
+              }
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
               <button
@@ -1792,6 +2106,9 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                       saveCampaignParty(party);
                       setPartyData(party);
                     }
+                    
+                    // Set active node to the newly unlocked area
+                    setActiveNodeAndUpdate(nodeToUnlock);
                     
                     // Open the corresponding chat modal with proper setup
                     if (nodeToUnlock === 'node2') {
@@ -3257,8 +3574,8 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   type="text"
                   value={briefingInput}
                   onChange={(e) => setBriefingInput(e.target.value)}
-                  placeholder="Type your message to the team..."
-                  disabled={briefingTyping}
+                  placeholder={missionBriefingCompleted ? "Mission briefing completed - this area is locked" : "Type your message to the team..."}
+                  disabled={briefingTyping || missionBriefingCompleted}
                   style={{
                     flex: 1,
                     padding: '12px 16px',
@@ -3272,16 +3589,16 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                 />
                 <button
                   type="submit"
-                  disabled={!briefingInput.trim() || briefingTyping}
+                  disabled={!briefingInput.trim() || briefingTyping || missionBriefingCompleted}
                   style={{
                     padding: '12px 20px',
-                    backgroundColor: (!briefingInput.trim() || briefingTyping) ? '#d1d5db' : '#3b82f6',
+                    backgroundColor: (!briefingInput.trim() || briefingTyping || missionBriefingCompleted) ? '#d1d5db' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: (!briefingInput.trim() || briefingTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!briefingInput.trim() || briefingTyping || missionBriefingCompleted) ? 'not-allowed' : 'pointer',
                     minWidth: '80px'
                   }}
                 >
