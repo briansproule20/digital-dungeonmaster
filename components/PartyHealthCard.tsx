@@ -25,10 +25,10 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
         position: 'fixed',
         left: 12,
         bottom: 12,
-        minWidth: '300px',
-        maxWidth: '400px',
+        minWidth: '150px',
+        maxWidth: '200px',
         backgroundColor: 'white',
-        borderRadius: '12px',
+        borderRadius: '6px',
         boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
         border: '1px solid #e5e7eb',
         zIndex: 1001,
@@ -38,14 +38,14 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
       {/* Header */}
       <div
         style={{
-          padding: '12px 16px',
+          padding: '6px 8px',
           borderBottom: '1px solid #e5e7eb',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#f9fafb',
-          borderRadius: '12px 12px 0 0',
-          fontSize: '14px',
+          borderRadius: '6px 6px 0 0',
+          fontSize: '12px',
           fontWeight: 'bold',
           color: '#374151'
         }}
@@ -55,10 +55,10 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
       
       {/* Content */}
       <div style={{ 
-        padding: '16px',
+        padding: '8px',
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '8px' 
+        gap: '4px' 
       }}>
         {heroes.map(hero => {
           const hearts = getHearts(hero.id);
@@ -69,15 +69,15 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
             <div key={hero.id} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '8px',
+              gap: '6px',
+              padding: '4px',
               borderRadius: '8px',
               backgroundColor: isDefeated ? '#f3f4f6' : 'transparent'
             }}>
               {/* Hero Avatar */}
               <div style={{
-                width: '32px',
-                height: '32px',
+                width: '20px',
+                height: '20px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 border: '2px solid #fff',
@@ -102,7 +102,7 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '8px',
                     fontWeight: 'bold',
                     color: isDefeated ? '#9ca3af' : '#6b7280'
                   }}>
@@ -113,7 +113,7 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
               
               {/* Hero Name */}
               <div style={{
-                fontSize: '13px',
+                fontSize: '11px',
                 fontWeight: '600',
                 color: isDefeated ? '#9ca3af' : '#374151',
                 flex: 1
@@ -124,7 +124,7 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
               {/* Hearts */}
               <div style={{
                 display: 'flex',
-                gap: '4px'
+                gap: '2px'
               }}>
                 {[0, 1, 2].map(heartIndex => (
                   <button
@@ -134,8 +134,8 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      fontSize: '16px',
-                      padding: '2px',
+                      fontSize: '12px',
+                      padding: '1px',
                       lineHeight: 1
                     }}
                     title={`${hero.name}: ${heartIndex < hearts ? 'Remove heart' : 'Add heart'}`}

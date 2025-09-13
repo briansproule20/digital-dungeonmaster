@@ -335,6 +335,9 @@ export default function ProofOfConcept() {
 
   // Load party data
   useEffect(() => {
+    // Clean up any corrupted campaign data on component mount
+    validateAndCleanCampaignData();
+    
     let party: Hero[] = [];
     
     // First try to load current party
@@ -433,12 +436,84 @@ export default function ProofOfConcept() {
   };
 
   const loadCampaignChat = (area: string) => {
-    const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
-    return campaignChat[area] || [];
+    try {
+      const campaignChatRaw = localStorage.getItem('campaignChat');
+      if (!campaignChatRaw) return [];
+      
+      const campaignChat = JSON.parse(campaignChatRaw);
+      const messages = campaignChat[area] || [];
+      
+      // Validate message structure
+      if (!Array.isArray(messages)) {
+        console.warn(`Invalid campaign chat data for area ${area}, clearing...`);
+        return [];
+      }
+      
+      // Validate each message has required structure
+      const validMessages = messages.filter(msg => {
+        if (!msg || typeof msg !== 'object') return false;
+        if (!msg.sender || !msg.text || !msg.id) return false;
+        if (msg.sender !== 'user' && msg.sender !== 'hero') return false;
+        return true;
+      });
+      
+      // If we filtered out invalid messages, save the cleaned version
+      if (validMessages.length !== messages.length) {
+        console.warn(`Cleaned ${messages.length - validMessages.length} invalid messages from ${area}`);
+        saveCampaignChat(area, validMessages);
+      }
+      
+      return validMessages;
+    } catch (error) {
+      console.error(`Error loading campaign chat for ${area}:`, error);
+      console.warn(`Clearing corrupted campaign chat data for ${area}`);
+      return [];
+    }
   };
 
   const clearCampaignChat = () => {
     localStorage.removeItem('campaignChat');
+  };
+
+  // Cleanup function to fix any existing corrupted data
+  const validateAndCleanCampaignData = () => {
+    try {
+      const campaignChatRaw = localStorage.getItem('campaignChat');
+      if (!campaignChatRaw) return;
+      
+      const campaignChat = JSON.parse(campaignChatRaw);
+      let needsSave = false;
+      
+      // Check each area
+      const areas = ['missionBriefing', 'medicalBay', 'armory', 'captainsQuarters', 'bridge'];
+      areas.forEach(area => {
+        const messages = campaignChat[area];
+        if (messages && Array.isArray(messages)) {
+          const validMessages = messages.filter(msg => {
+            if (!msg || typeof msg !== 'object') return false;
+            if (!msg.sender || !msg.text || !msg.id) return false;
+            if (msg.sender !== 'user' && msg.sender !== 'hero') return false;
+            return true;
+          });
+          
+          if (validMessages.length !== messages.length) {
+            console.warn(`Cleaned ${messages.length - validMessages.length} corrupted messages from ${area}`);
+            campaignChat[area] = validMessages;
+            needsSave = true;
+          }
+        }
+      });
+      
+      if (needsSave) {
+        campaignChat.lastUpdated = Date.now();
+        localStorage.setItem('campaignChat', JSON.stringify(campaignChat));
+        console.log('Campaign data cleanup completed');
+      }
+    } catch (error) {
+      console.error('Error during campaign data validation:', error);
+      console.warn('Clearing all corrupted campaign data');
+      localStorage.removeItem('campaignChat');
+    }
   };
 
   // Campaign party persistence functions
@@ -544,7 +619,7 @@ export default function ProofOfConcept() {
           } else if (msg.sender === 'hero' && msg.speaker) {
             campaignMessages.push({
               role: 'assistant',
-              content: msg.text
+              content: `**${msg.speaker}:** ${msg.text}`
             });
           }
         });
@@ -898,37 +973,16 @@ export default function ProofOfConcept() {
       'bridge': 'on the bridge facing the final confrontation with the unknown threat'
     };
     
-    return `ABSOLUTE CRITICAL RULES - VIOLATION WILL BREAK THE GAME:
+    return `You are ${hero.name}. You are a player character in a D&D game.
 
-1. YOU ARE ONLY ${hero.name}. NOTHING ELSE.
-2. DO NOT SPEAK AS OTHER CHARACTERS. EVER.
-3. DO NOT MENTION OTHER CHARACTERS BY NAME UNLESS YOU ARE ADDRESSING THEM DIRECTLY. DO NOT GIVE THEIR REPLY TO YOU, THAT IS THE DM'S JOB.
-4. DO NOT DESCRIBE WHAT OTHER CHARACTERS DO.
-5. DO NOT ACT AS THE DUNGEON MASTER.
-6. DO NOT DESCRIBE THE ENVIRONMENT.
-7. DO NOT ASK "WHAT'S YOUR NEXT MOVE?"
-8. NEVER REFERENCE DICE ROLLS OR CALL FOR ROLLS - you can only describe actions, attacks, searches, help, etc. The Dungeon Master (player/user) handles all dice rolling.
-9. RESPOND ONLY AS YOURSELF - ${hero.name}.
+CRITICAL RULES: 
+- You can ONLY speak as ${hero.name}. 
+- Do NOT write dialogue for other characters like "Glubb:", "Monke:", "Caveman:". 
+- Do NOT act as narrator.
+- When the DM asks the team a question, you can only answer for yourself as ${hero.name}.
+- Do NOT answer for other party members or speak on their behalf.
 
-You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
-
-BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
-
-PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
-
-APPEARANCE: ${hero.appearance || 'You have a distinctive appearance that matches your background.'}
-
-${missionBriefing}
-
-You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. 
-
-FOR TURN-BASED PARTY DIALOGUE: You are in an active group conversation. Build naturally on what the previous speaker just said - agree, disagree, add to their idea, ask follow-up questions, or pivot the discussion. Reference their specific suggestions directly ("That's smart", "I disagree because...", "Building on that...", "What if we also..."). Make it feel like a real conversation where each person's input matters and influences what you say next. Be conversational, not formal.
-
-Keep responses engaging but concise (2-3 sentences max).
-
-CRITICAL REMINDER: You are ONLY ${hero.name}. You do NOT speak for other characters. You do NOT describe what other characters are doing. You do NOT act as the DM. You CAN reference ideas and suggestions made by others, but do NOT put words in their mouths or speak on their behalf. Respond only as yourself with your own thoughts and feelings about what's been discussed.
-
-${campaignContext}`;
+Respond with only what ${hero.name} would personally say. 1-2 sentences maximum.`;
   };
 
   const handleAreaHeroResponse = async (hero: Hero, area: string) => {
@@ -997,21 +1051,13 @@ ${campaignContext}`;
       // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
       const fullSystemPrompt = generateCampaignSystemPrompt(hero, area);
 
-      console.log('Full system prompt being sent:', fullSystemPrompt);
-
-      // Get all campaign chat history to include in the conversation
-      const campaignHistory = generateCampaignHistory();
-      
-      // Combine campaign history with current area messages
+      // Only include current area messages - NO CAMPAIGN HISTORY
       const allMessages = [
-        ...campaignHistory,
         ...currentArea.messages.map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'assistant',
           content: msg.text
         }))
       ];
-
-      console.log('All messages being sent to AI:', allMessages);
 
       const response = await fetch('/api/chat', {
         method: 'POST',
