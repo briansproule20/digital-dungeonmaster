@@ -29,13 +29,13 @@ export default function BeginnerCampaigns() {
 
   const campaigns: Campaign[] = [
     {
-      id: 'proof-of-concept',
-      name: 'Proof of Concept',
-      description: 'Our proof of concept campaign designed to test and demonstrate core features.',
+      id: 'tutorial',
+      name: 'Tutorial',
+      description: 'A tutorial campaign designed to teach you the basics of digital D&D.',
       duration: '5-10 mins',
       difficulty: 'Beginner',
-      preview: 'Experience a thrilling space adventure aboard a mysterious starship. Navigate through different areas, make crucial decisions, and face the ultimate challenge in this introductory campaign.',
-      path: '/campaigns/beginner/proof-of-concept'
+      preview: 'Experience a space adventure aboard a mysterious starship. Navigate through different areas, make crucial decisions, and face the ultimate challenge in this introductory campaign.',
+      path: '/campaigns/beginner/tutorial'
     }
   ];
 
@@ -95,8 +95,8 @@ export default function BeginnerCampaigns() {
   };
 
   const resumeCampaign = () => {
-    // Resume the proof of concept campaign (the only one with save data)
-    window.location.href = '/campaigns/beginner/proof-of-concept';
+    // Resume the tutorial campaign (the only one with save data)
+    window.location.href = '/campaigns/beginner/tutorial';
   };
 
   return (
