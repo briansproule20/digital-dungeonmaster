@@ -6,8 +6,8 @@ export default function Docs() {
   const [activeSection, setActiveSection] = useState('what-is-dnd');
 
   const sections = [
-    { id: 'campaign-best-practices', title: 'Campaign Best Practices' },
     { id: 'what-is-dnd', title: 'What is D&D?' },
+    { id: 'campaign-best-practices', title: 'Campaign Best Practices' },
     { id: 'core-concepts', title: 'Core Concepts' },
     { id: 'dnd-classes', title: 'D&D Classes' },
     { id: 'dice-system', title: 'The Dice System' },
@@ -77,6 +77,14 @@ export default function Docs() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Beginner's Guide</h1>
           <p className="text-xl text-gray-600 italic mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
 
+          <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
+          <p className="text-gray-700 leading-relaxed mb-6">
+            Dungeons & Dragons is a tabletop roleplaying game where you and your friends create characters and embark on adventures in a fantasy world. One player acts as the <strong>Dungeon Master (DM)</strong> who describes the world and controls the story, while the other players control <strong>Player Characters (PCs)</strong> who are the heroes of the tale.
+          </p>
+          <p className="text-gray-700 leading-relaxed mb-6">
+            Think of it like collaborative storytelling with dice to add excitement and uncertainty!
+          </p>
+
           <h2 id="campaign-best-practices" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Campaign Best Practices</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
             Our game draws inspiration from <a href="https://www.youtube.com/@DougDoug" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">DougDoug's incredible YouTube series</a> where he plays D&D with AI characters. His videos showcase the perfect blend of chaos and creativity that makes AI-driven campaigns so entertaining. We highly recommend checking out his channel for great examples of how AI characters can create hilarious adventures.
@@ -84,14 +92,6 @@ export default function Docs() {
           
           <p className="text-gray-700 leading-relaxed mb-6">
             While we provide story frameworks to get your campaigns started, you're the DM — it's your role to guide the AI characters through encounters, plot twists, and memorable moments. The more detailed and immersive you make the world, the better your AI players will respond and engage with the story.
-          </p>
-
-          <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
-          <p className="text-gray-700 leading-relaxed mb-6">
-            Dungeons & Dragons is a tabletop roleplaying game where you and your friends create characters and embark on adventures in a fantasy world. One player acts as the <strong>Dungeon Master (DM)</strong> who describes the world and controls the story, while the other players control <strong>Player Characters (PCs)</strong> who are the heroes of the tale.
-          </p>
-          <p className="text-gray-700 leading-relaxed mb-6">
-            Think of it like collaborative storytelling with dice to add excitement and uncertainty!
           </p>
 
           <h2 id="core-concepts" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Core Concepts</h2>
