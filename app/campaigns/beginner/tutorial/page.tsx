@@ -387,21 +387,51 @@ export default function ProofOfConcept() {
   
   // Function to generate area summary for any area
   const generateAreaSummary = async (areaName: string, messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
-    // Simple summary generation without API dependency
-    const messageCount = messages.length;
-    const hasUserMessages = messages.some(msg => msg.sender === 'user');
-    const hasHeroMessages = messages.some(msg => msg.sender === 'hero');
-    
-    if (areaName === 'Mission Briefing') {
-      return `Mission Briefing completed. The party has received their initial orders to investigate and escape the ship. They understand the situation and are ready to explore.`;
-    } else if (areaName === 'Medical Bay') {
-      return `Medical Bay exploration completed. The party has investigated the medical facility and gathered information about the ship's medical capabilities.`;
-    } else if (areaName === 'Armory') {
-      return `Armory exploration completed. The party has investigated the weapons facility and gathered information about available equipment.`;
-    } else if (areaName === 'Captain\'s Quarters') {
-      return `Captain's Quarters exploration completed. The party has investigated the captain's personal space and gathered important information.`;
-    } else {
-      return `${areaName} exploration completed. The party has investigated this area and gathered information to help with their mission.`;
+    if (messages.length === 0) {
+      return `${areaName} - No activity recorded.`;
+    }
+
+    try {
+      // Extract key conversation content
+      const conversationContent = messages
+        .filter(msg => msg.sender === 'user' || (msg.sender === 'hero' && msg.speaker))
+        .map(msg => `${msg.sender === 'user' ? 'Player' : msg.speaker}: ${msg.text}`)
+        .join('\n');
+
+      const summaryPrompt = `Analyze this ${areaName} conversation and create a concise summary highlighting:
+
+- Key discoveries, items found, or information learned
+- Important decisions made or actions taken
+- Notable NPCs encountered or dialogue
+- Environmental details or clues discovered
+- Any threats, obstacles, or challenges faced
+
+Keep it under 100 words. Focus on concrete facts and discoveries that would be important for future reference.
+
+Conversation:
+${conversationContent}
+
+Summary:`;
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: summaryPrompt }],
+          heroSystemPrompt: `You are a campaign memory assistant. Create concise, factual summaries of campaign events. Focus on concrete details, discoveries, and key information that characters would remember. Keep summaries under 100 words and avoid generic descriptions.`
+        })
+      });
+
+      if (response.ok) {
+        const summary = await response.text();
+        return summary.trim();
+      } else {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Failed to generate area summary:', error);
+      // Fallback to simple summary if API fails
+      return `${areaName} - Conversation completed with ${messages.length} messages exchanged.`;
     }
   };
 
@@ -862,29 +892,25 @@ export default function ProofOfConcept() {
   const generateCampaignContext = () => {
     let context = '\n\n**CAMPAIGN HISTORY - WHAT HAS HAPPENED SO FAR:**\n';
     
-    // Load ALL saved chat data from localStorage for complete context
-    const allAreas = [
-      { name: 'Mission Briefing', messages: loadCampaignChat('missionBriefing') },
-      { name: 'Medical Bay', messages: loadCampaignChat('medicalBay') },
-      { name: 'Armory', messages: loadCampaignChat('armory') },
-      { name: 'Captain\'s Quarters', messages: loadCampaignChat('captainsQuarters') },
-      { name: 'Bridge', messages: loadCampaignChat('bridge') }
-    ];
-    
-    console.log('All areas for context:', allAreas.map(area => ({ name: area.name, messageCount: area.messages.length })));
-    
-    allAreas.forEach(area => {
-      if (area.messages.length > 0) {
-        context += `\n**${area.name}:**\n`;
-        area.messages.forEach((msg: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}) => {
-          if (msg.sender === 'user') {
-            context += `Player: ${msg.text}\n`;
-          } else if (msg.sender === 'hero' && msg.speaker) {
-            context += `${msg.text}\n`;
+    // Load area summaries from localStorage for clean context
+    try {
+      const savedSummaries = localStorage.getItem('areaSummaries');
+      if (savedSummaries) {
+        const areaSummaries = JSON.parse(savedSummaries);
+        
+        // Add summaries in logical order
+        const areaOrder = ['missionBriefing', 'medicalBay', 'armory', 'captainsQuarters', 'bridge'];
+        
+        areaOrder.forEach(areaKey => {
+          if (areaSummaries[areaKey]) {
+            const areaName = areaKey.charAt(0).toUpperCase() + areaKey.slice(1).replace(/([A-Z])/g, ' $1');
+            context += `\n**${areaName}:** ${areaSummaries[areaKey]}\n`;
           }
         });
       }
-    });
+    } catch (error) {
+      console.error('Failed to load area summaries for context:', error);
+    }
     
     console.log('Generated Campaign Context:', context);
     return context;
@@ -1315,7 +1341,20 @@ export default function ProofOfConcept() {
   // Helper function to generate unified campaign system prompt
   const generateCampaignSystemPrompt = (hero: Hero, area: string = 'general') => {
     if (hero.system_prompt) {
-      return hero.system_prompt;
+      // Add campaign-specific DM rules to the hero's existing system prompt
+      return `${hero.system_prompt}
+
+CRITICAL CAMPAIGN RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
+- You are ${hero.name}, a PLAYER CHARACTER in this campaign
+- You CANNOT act as the Dungeon Master, narrator, or game master
+- You CANNOT present options to other players or ask "What would you like to do?"
+- You CANNOT list "Current Options:" or suggest actions to other players
+- You CANNOT describe what the player "can" do
+
+RESPONSE REQUIREMENTS:
+- Speak ONLY as ${hero.name}
+- Keep responses to 1-2 sentences
+- Stay in character based on your background and personality`;
     }
 
     const missionBriefing = generateMissionBriefing();
@@ -1361,21 +1400,20 @@ ${(() => {
   return summaries ? `\n\nPREVIOUS AREA EXPLORATION:${summaries}` : '';
 })()}
 
-D&D PLAYER RULES:
-- You are a PLAYER CHARACTER, not the DM
-- Propose actions you want to take ("I want to search the room")
-- React to situations based on your character's personality and skills
-- The DM handles dice rolls, environment descriptions, and outcomes
-- Other players control their own characters
-- You can only respond as ${hero.name} - no other characters
-- You cannot act as narrator or DM
-- You are allowed to disagree with the other players in your party and propose your own actions
+CRITICAL RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
+- You are ${hero.name}, a PLAYER CHARACTER in this campaign
+- You CANNOT act as the Dungeon Master, narrator, or game master
+- You CANNOT present options to other players
+- You CANNOT describe what the player "can" do
+- You CANNOT ask "What would you like to do?" or similar DM questions
+- You CANNOT list "Current Options:" or suggest actions to other players
 
-ON YOUR TURN, YOU CAN:
-- Move up to your speed (usually 30 feet)
-- Take one action
-- Interact with one object for free
-- Communicate with the other players in your party
+WHAT YOU CAN DO AS ${hero.name}:
+- Describe what ${hero.name} is doing or saying
+- React to situations based on your character's personality
+- Propose your own actions ("I search the room", "I listen at the door")
+- Interact with other party members in character
+- Make decisions based on your character's background and skills
 
 WHEN ASKED WHAT YOU WANT TO DO, HERE ARE YOUR OPTIONS: Common Actions
 Attack - Make one weapon or spell attack related to your character's abilities
@@ -1450,11 +1488,11 @@ RESPONSE REQUIREMENTS:
         'bridge': 'on the bridge facing the final confrontation with the unknown threat'
       };
 
-      const missionBriefing = generateMissionBriefing();
-      const campaignContext = generateCampaignContext();
-      
       console.log(`DEBUG: Generating system prompt for hero: ${hero.name} (${hero.id})`);
       console.log('DEBUG: Hero data:', hero);
+      
+      // Generate campaign context with area summaries for system prompt
+      const campaignContext = generateCampaignContext();
       
       // SYSTEM PROMPT #1: CAMPAIGN PROMPT
       // Used for: All campaign area responses AND turn-based party dialogue
@@ -1740,7 +1778,23 @@ PERSONALITY: ${hero?.personality_traits ? hero.personality_traits.join(', ') : '
 
 APPEARANCE: ${hero?.appearance || 'You have a distinctive appearance that matches your adventuring background.'}
 
-You are a PLAYER CHARACTER. Respond in character with personality and emotion based on your background and traits. Take initiative, make suggestions, and act according to your character's expertise and personality. Do NOT ask the user what to do - you are the character making decisions and taking action. NEVER reference dice rolls or call for rolls - you can only describe actions, attacks, searches, help, etc. The Dungeon Master handles all dice rolling. Keep responses concise but engaging.`
+CRITICAL RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
+- You are ${hero?.name}, a PLAYER CHARACTER in this campaign
+- You CANNOT act as the Dungeon Master, narrator, or game master
+- You CANNOT present options to other players or ask "What would you like to do?"
+- You CANNOT list "Current Options:" or suggest actions to other players
+- You CANNOT describe what the player "can" do
+
+WHAT YOU CAN DO:
+- Describe what ${hero?.name} is doing or saying
+- React to situations based on your character's personality
+- Propose your own actions ("I search the room", "I listen at the door")
+- Make decisions based on your character's background and skills
+
+RESPONSE REQUIREMENTS:
+- Speak ONLY as ${hero?.name}
+- Keep responses to 1-2 sentences
+- Stay in character based on your background and personality`
           })
         });
 
