@@ -33,36 +33,36 @@ const initialNodes: Node[] = [
   { 
     id: 'node1', 
     position: { x: 400, y: 50 }, 
-    data: { label: 'Mission Briefing' },
+    data: { label: 'Mission Briefing', unlocked: true },
     style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
     draggable: false
   },
   { 
     id: 'node2', 
     position: { x: 200, y: 200 }, 
-    data: { label: 'Medical Bay' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+    data: { label: '🔒 Medical Bay', unlocked: false },
+    style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
     draggable: false
   },
   { 
     id: 'node3', 
     position: { x: 600, y: 200 }, 
-    data: { label: 'Armory' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+    data: { label: '🔒 Armory', unlocked: false },
+    style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
     draggable: false
   },
   { 
     id: 'node4', 
     position: { x: 400, y: 350 }, 
-    data: { label: "Captain's Quarters" },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+    data: { label: "🔒 Captain's Quarters", unlocked: false },
+    style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
     draggable: false
   },
   { 
     id: 'node5', 
     position: { x: 400, y: 500 }, 
-    data: { label: 'Boss Battle' },
-    style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
+    data: { label: '🔒 Boss Battle', unlocked: false },
+    style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
     draggable: false
   },
 ];
@@ -320,12 +320,90 @@ interface ChatBox {
   inputValue: string;
 }
 
+// Custom node component with lock icons
+const CustomNode = ({ data, selected }: { data: any; selected: boolean }) => {
+  const isLocked = !data.unlocked;
+  
+  return (
+    <div style={{
+      background: isLocked ? '#f3f4f6' : 'white',
+      border: `2px solid ${isLocked ? '#d1d5db' : '#3b82f6'}`,
+      borderRadius: '8px',
+      padding: '12px 16px',
+      minWidth: '120px',
+      textAlign: 'center',
+      position: 'relative',
+      opacity: isLocked ? 0.7 : 1,
+      width: 'fit-content',
+      height: 'fit-content'
+    }}>
+      {isLocked && (
+        <div style={{
+          position: 'absolute',
+          top: '-8px',
+          right: '-8px',
+          width: '20px',
+          height: '20px',
+          backgroundColor: '#6b7280',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px solid white'
+        }}>
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'white' }}>
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+      )}
+      <div style={{
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: isLocked ? '#6b7280' : '#1f2937'
+      }}>
+        {data.label}
+      </div>
+    </div>
+  );
+};
+
 export default function ProofOfConcept() {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [chatBoxes, setChatBoxes] = useState<ChatBox[]>([]);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  
+  // Campaign progression state
+  const [unlockedModules, setUnlockedModules] = useState<Set<string>>(new Set(['node1'])); // Only Mission Briefing unlocked initially
+  const [showLockedModal, setShowLockedModal] = useState(false);
+  const [lockedModuleName, setLockedModuleName] = useState<string>('');
+  const [nodeToUnlock, setNodeToUnlock] = useState<string>('');
+  
+  // Function to unlock modules based on progression
+  const unlockModules = (moduleIds: string[]) => {
+    setUnlockedModules(prev => {
+      const newSet = new Set(prev);
+      moduleIds.forEach(id => newSet.add(id));
+      return newSet;
+    });
+    
+    // Update node styles to show unlocked state
+    setNodes(prevNodes => 
+      prevNodes.map(node => {
+        if (moduleIds.includes(node.id)) {
+          // Remove lock emoji and update styling
+          const label = node.data.label.replace('🔒 ', '');
+          return {
+            ...node,
+            style: { ...node.style, color: '#000', opacity: 1 },
+            data: { ...node.data, label, unlocked: true }
+          };
+        }
+        return node;
+      })
+    );
+  };
   
   // Party data for health tracking
   const [partyData, setPartyData] = useState<Hero[]>([]);
@@ -825,6 +903,17 @@ export default function ProofOfConcept() {
   }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
+    console.log('Node clicked:', node.id, 'unlocked:', unlockedModules.has(node.id));
+    // Check if module is unlocked
+    if (!unlockedModules.has(node.id)) {
+      // Allow unlocking by clicking - show confirmation modal
+      console.log('Setting locked module:', node.data.label, 'node ID:', node.id);
+      setLockedModuleName(node.data.label.replace('🔒 ', ''));
+      setNodeToUnlock(node.id);
+      setShowLockedModal(true);
+      return;
+    }
+    
     // Get user's party from localStorage, with campaign fallback
     let party: Hero[] = [];
     
@@ -1196,6 +1285,14 @@ RESPONSE REQUIREMENTS:
     
     currentArea.setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
+    // Check if Mission Briefing is completed and unlock other modules
+    if (area === 'missionBriefing') {
+      // Unlock Medical Bay and Armory after Mission Briefing
+      setTimeout(() => {
+        unlockModules(['node2', 'node3']);
+      }, 1000); // Small delay to let the message process
+    }
   };
 
   // Legacy function for backward compatibility
@@ -1587,6 +1684,196 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
         bridgeOpen={bridgeOpen}
         onDiceRoll={handleDiceRoll} 
       />
+
+      {/* Locked Module Modal */}
+      {showLockedModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          pointerEvents: 'auto'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            pointerEvents: 'auto'
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              border: '2px solid #e5e7eb'
+            }}>
+              <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20" style={{ color: '#6b7280' }}>
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#1f2937',
+              marginBottom: '8px'
+            }}>
+              {lockedModuleName}
+            </h2>
+            <p style={{
+              fontSize: '16px',
+              color: '#6b7280',
+              marginBottom: '24px',
+              lineHeight: '1.5'
+            }}>
+              This area is currently locked. Would you like to unlock it and explore this section of the ship?
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowLockedModal(false);
+                  setNodeToUnlock('');
+                }}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: '2px solid #dc2626',
+                  borderRadius: '8px',
+                  padding: '16px 32px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                  zIndex: 10000
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  if (nodeToUnlock) {
+                    unlockModules([nodeToUnlock]);
+                    
+                    // Get party data first
+                    let party: Hero[] = [];
+                    const savedParty = localStorage.getItem('myParty');
+                    if (savedParty) {
+                      try {
+                        party = JSON.parse(savedParty);
+                      } catch (error) {
+                        console.error('Failed to parse current party:', error);
+                      }
+                    }
+                    
+                    if (party.length === 0) {
+                      party = loadCampaignParty();
+                    }
+                    
+                    // Save party to campaign and set party data
+                    if (party.length > 0) {
+                      saveCampaignParty(party);
+                      setPartyData(party);
+                    }
+                    
+                    // Open the corresponding chat modal with proper setup
+                    if (nodeToUnlock === 'node2') {
+                      setMedicalBayParty(party);
+                      const savedMessages = loadCampaignChat('medicalBay');
+                      if (savedMessages.length > 0) {
+                        setMedicalBayMessages(savedMessages);
+                      } else {
+                        setMedicalBayMessages([{
+                          sender: 'hero',
+                          text: '*The medical bay is dimly lit with flickering emergency lights. Medical equipment hums softly in the background.*\n\nYou find yourself in the ship\'s medical facility. Various diagnostic tools and treatment stations line the walls, though some appear to have been damaged or tampered with.\n\n**Your party has entered the Medical Bay.**\n\nWhat would you like to investigate?',
+                          id: Date.now().toString(),
+                          speaker: 'Narrator'
+                        }]);
+                      }
+                      setMedicalBayOpen(true);
+                    } else if (nodeToUnlock === 'node3') {
+                      setArmoryParty(party);
+                      const savedMessages = loadCampaignChat('armory');
+                      if (savedMessages.length > 0) {
+                        setArmoryMessages(savedMessages);
+                      } else {
+                        setArmoryMessages([{
+                          sender: 'hero',
+                          text: '*The armory door slides open with a hiss, revealing rows of weapon lockers and tactical equipment.*\n\nYou\'ve entered the ship\'s armory. Various weapons, armor, and tactical gear are stored here, though some lockers appear to have been forcibly opened.\n\n**Your party has entered the Armory.**\n\nWhat would you like to do here?',
+                          id: Date.now().toString(),
+                          speaker: 'Narrator'
+                        }]);
+                      }
+                      setArmoryOpen(true);
+                    } else if (nodeToUnlock === 'node4') {
+                      setCaptainsQuartersParty(party);
+                      const savedMessages = loadCampaignChat('captainsQuarters');
+                      if (savedMessages.length > 0) {
+                        setCaptainsQuartersMessages(savedMessages);
+                      } else {
+                        setCaptainsQuartersMessages([{
+                          sender: 'hero',
+                          text: '*You enter the captain\'s quarters - a spacious room with a large desk, personal terminal, and windows overlooking space.*\n\nThe room appears to have been recently occupied, with items scattered about. The captain\'s personal terminal is still active, displaying various ship status reports.\n\n**Your party has entered the Captain\'s Quarters.**\n\nWhat would you like to investigate?',
+                          id: Date.now().toString(),
+                          speaker: 'Narrator'
+                        }]);
+                      }
+                      setCaptainsQuartersOpen(true);
+                    } else if (nodeToUnlock === 'node5') {
+                      setBridgeParty(party);
+                      const savedMessages = loadCampaignChat('bridge');
+                      if (savedMessages.length > 0) {
+                        setBridgeMessages(savedMessages);
+                      } else {
+                        setBridgeMessages([{
+                          sender: 'hero',
+                          text: '*You step onto the ship\'s bridge - the command center with multiple control stations and a large viewscreen.*\n\nThe bridge is fully operational, with various displays showing ship status, navigation data, and system diagnostics. However, there\'s an eerie sense that something is watching from the shadows.\n\n**Your party has entered the Bridge.**\n\nThis appears to be the final area. What would you like to do?',
+                          id: Date.now().toString(),
+                          speaker: 'Narrator'
+                        }]);
+                      }
+                      setBridgeOpen(true);
+                    }
+                  }
+                  setShowLockedModal(false);
+                  setNodeToUnlock('');
+                }}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: '2px solid #059669',
+                  borderRadius: '8px',
+                  padding: '16px 32px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                  zIndex: 10000
+                }}
+              >
+                UNLOCK AREA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Party Health Card */}
       <PartyHealthCard heroes={partyData} />
