@@ -437,23 +437,23 @@ export default function ProofOfConcept() {
   const generateMissionBriefing = () => {
     return `**MISSION BRIEFING:**
 
-**Primary Objective:** Investigate the silent research vessel that went dark 72 hours ago near Kepler Station. Determine what happened to the crew and report back to Mission Control.
+**Primary Objective:** Investigate current starship, commandeer it, and escape imprisonment.
 
-**Current Situation:** You are aboard your own ship, approaching the mysterious research vessel. Communication was lost with the research vessel, and you are the rescue team sent to investigate.
+**Current Situation:** The party has awoken from cryosleep in the locked cargohold of the ship.
 
 **Available Investigation Areas:**
-• **Medical Bay** - Check for survivors, examine medical equipment and records
-• **Armory** - Assess weapons and security systems, check for signs of conflict
-• **Captain's Quarters** - Search for logs, personal effects, and clues about what happened
-• **Bridge** - Access ship systems, communications, and face whatever threat awaits
+• **Medical Bay** - Find medical supplies, check ship records, look for escape routes
+• **Armory** - Acquire weapons and equipment needed for commandeering the ship
+• **Captain's Quarters** - Access ship controls, find keys/codes, discover who imprisoned you
+• **Bridge** - Take control of the ship and execute your escape
 
 **Important Notes:**
-- Trust no one - something is very wrong on this vessel
-- The crew disappeared without warning
-- Your mission is to investigate, not to engage unless necessary
-- Report findings back to Mission Control when possible
+- You are prisoners who must escape
+- The ship's crew may be hostile - proceed with caution
+- Your survival depends on successfully commandeering this vessel
+- Work together to overcome the challenges ahead
 
-**Current Status:** You have just arrived at the research vessel and are preparing to board.`;
+**Current Status:** You have just awakened from cryosleep in the locked cargo hold and must find a way out.`;
   };
 
   const generateCampaignContext = () => {
@@ -768,9 +768,9 @@ export default function ProofOfConcept() {
             setBriefingMessages([
               {
                 sender: 'hero',
-                text: `*Mission Control crackles to life*\n\nWelcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent in deep space, and you're our only hope of discovering what happened.\n\n**Your crew consists of:**\n${party.map((h: Hero) => `• **${h.name}** - ${h.race} ${h.class}`).join('\n')}\n\n**Mission Details:**\n• The vessel was last seen near the Kepler Station\n• Communication was lost 72 hours ago\n• Your mission: board the vessel, investigate, and report back\n\n> *Remember: Trust no one. Something is very wrong here.*`,
+                text: `*Emergency lights flicker as you awaken from cryosleep*\n\nYou slowly regain consciousness in the dimly lit cargo hold. The taste of stale recycled air fills your lungs as you realize you're locked in. Your memories are hazy, but one thing is clear - you need to escape.\n\n**Your party consists of:**\n${party.map((h: Hero) => `• **${h.name}** - ${h.race} ${h.class}`).join('\n')}\n\n**Current Situation:**\n• You've awakened from cryosleep in a locked cargo hold\n• The ship appears to be operational but you don't know where you are\n• Your objective: investigate, commandeer the ship, and escape\n\n> *Work together. Trust each other. Your survival depends on it.*`,
                 id: Date.now().toString(),
-                speaker: 'Mission Control'
+                speaker: 'Narrator'
               }
             ]);
         }
