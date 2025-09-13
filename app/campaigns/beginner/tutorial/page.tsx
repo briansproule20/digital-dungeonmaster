@@ -998,6 +998,16 @@ ON YOUR TURN, YOU CAN:
 - Interact with one object for free
 - Communicate with the other players in your party
 
+Common Actions
+Attack - Make one weapon or spell attack related to your character's abilities
+Cast a Spell - Most spells take an action related to your character's abilities
+Dash - Move again (double your movement)
+Dodge - Attackers have disadvantage until your next turn
+Help - Give an ally advantage on their next check
+Hide - Make a Stealth check
+Ready - Prepare an action for a specific trigger
+Search - Look for something specific
+
 RESPONSE REQUIREMENTS:
 - You are ONLY ${hero.name} - speak only as this character
 - Do NOT write dialogue for other characters
