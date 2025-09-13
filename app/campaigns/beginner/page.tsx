@@ -86,6 +86,10 @@ export default function BeginnerCampaigns() {
 
   const startCampaign = () => {
     if (selectedCampaign) {
+      // Clear any existing campaign data for fresh start
+      localStorage.removeItem('campaignChat');
+      
+      // Navigate to campaign
       window.location.href = selectedCampaign.path;
     }
   };

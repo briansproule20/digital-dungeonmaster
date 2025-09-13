@@ -420,6 +420,19 @@ export default function ProofOfConcept() {
     localStorage.removeItem('campaignChat');
   };
 
+  // Campaign party persistence functions
+  const saveCampaignParty = (heroes: Hero[]) => {
+    const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
+    campaignChat.campaignParty = heroes;
+    campaignChat.lastUpdated = Date.now();
+    localStorage.setItem('campaignChat', JSON.stringify(campaignChat));
+  };
+
+  const loadCampaignParty = (): Hero[] => {
+    const campaignChat = JSON.parse(localStorage.getItem('campaignChat') || '{}');
+    return campaignChat.campaignParty || [];
+  };
+
 
   const generateMissionBriefing = () => {
     return `**MISSION BRIEFING:**
@@ -523,7 +536,7 @@ export default function ProofOfConcept() {
 
 
   const startNewCampaign = () => {
-    const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\n• Mission briefing conversations\n• Medical Bay conversations\n• Armory conversations\n• Captain's Quarters conversations\n• Bridge/Boss Battle conversations\n• Individual hero chats\n• All chat history and progress\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
+    const confirmMessage = `⚠️ WARNING: This will permanently erase ALL campaign progress!\n\nThis action cannot be undone. Are you sure you want to start a new campaign?`;
     
     if (confirm(confirmMessage)) {
       clearCampaignChat();
@@ -548,6 +561,9 @@ export default function ProofOfConcept() {
       setCaptainsQuartersOpen(false);
       setBridgeOpen(false);
       setSelectedNode(null);
+      
+      // Force page refresh to ensure clean slate
+      window.location.reload();
     }
   };
 
@@ -713,15 +729,33 @@ export default function ProofOfConcept() {
   }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
-    // Get user's party from localStorage
+    // Get user's party from localStorage, with campaign fallback
+    let party: Hero[] = [];
+    
+    // Try current party first
     const savedParty = localStorage.getItem('myParty');
-    if (!savedParty) {
+    if (savedParty) {
+      try {
+        party = JSON.parse(savedParty);
+      } catch (error) {
+        console.error('Failed to parse current party:', error);
+      }
+    }
+    
+    // If no current party, try campaign saved party
+    if (party.length === 0) {
+      party = loadCampaignParty();
+    }
+    
+    // If still no party available, show node selection
+    if (party.length === 0) {
       setSelectedNode(node);
       return;
     }
 
     try {
-      const party: Hero[] = JSON.parse(savedParty);
+      // Save party to campaign (for future resume capability)
+      saveCampaignParty(party);
 
       if (node.id === 'node1') { // Mission Briefing
         setBriefingParty(party);
