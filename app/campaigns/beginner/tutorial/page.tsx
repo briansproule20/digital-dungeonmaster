@@ -241,22 +241,8 @@ import PartyHealthCard from '../../../../components/PartyHealthCard';
 import HeroAvatarButton from '../../../../components/HeroAvatarButton';
 import HeroTooltip from '../../../../components/HeroTooltip';
 
-function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }) {
-  const [userParty, setUserParty] = useState<Hero[]>([]);
-
-  useEffect(() => {
-    const savedParty = localStorage.getItem('myParty');
-    if (savedParty) {
-      try {
-        const party = JSON.parse(savedParty);
-        setUserParty(party);
-      } catch (error) {
-        console.error('Failed to parse saved party:', error);
-      }
-    }
-  }, []);
-
-  if (userParty.length === 0) return null;
+function PartyAvatars({ onAvatarClick, heroes }: { onAvatarClick: (hero: Hero) => void, heroes: Hero[] }) {
+  if (heroes.length === 0) return null;
 
   return (
     <div style={{
@@ -267,7 +253,7 @@ function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }
       gap: '8px',
       zIndex: 1000
     }}>
-      {userParty.map((hero, index) => (
+      {heroes.map((hero, index) => (
         <div
           key={hero.id}
           onClick={() => onAvatarClick(hero)}
@@ -281,7 +267,7 @@ function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }
             backgroundColor: '#f3f4f6',
             marginLeft: index > 0 ? '-8px' : '0',
             position: 'relative',
-            zIndex: userParty.length - index,
+            zIndex: heroes.length - index,
             cursor: 'pointer',
             transition: 'transform 0.2s ease'
           }}
@@ -349,15 +335,25 @@ export default function ProofOfConcept() {
 
   // Load party data
   useEffect(() => {
+    let party: Hero[] = [];
+    
+    // First try to load current party
     const savedParty = localStorage.getItem('myParty');
     if (savedParty) {
       try {
-        const party = JSON.parse(savedParty);
-        setPartyData(party);
+        party = JSON.parse(savedParty);
       } catch (error) {
-        console.error('Failed to parse saved party:', error);
+        console.error('Failed to parse current party:', error);
       }
     }
+    
+    // If no current party, try campaign saved party (for resume functionality)
+    if (party.length === 0) {
+      party = loadCampaignParty();
+    }
+    
+    // Set the party data for health tracking
+    setPartyData(party);
   }, []);
 
   const nodeInfo: Record<string, { title: string; description: string; content: string }> = {
@@ -781,6 +777,9 @@ export default function ProofOfConcept() {
     try {
       // Save party to campaign (for future resume capability)
       saveCampaignParty(party);
+      
+      // Update partyData for health card
+      setPartyData(party);
 
       if (node.id === 'node1') { // Mission Briefing
         setBriefingParty(party);
@@ -1500,7 +1499,7 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#94a3b8" />
         <CustomControls onStartNewCampaign={startNewCampaign} />
-        <PartyAvatars onAvatarClick={onAvatarClick} />
+        <PartyAvatars onAvatarClick={onAvatarClick} heroes={partyData} />
       </ReactFlow>
 
       <DiceRoller 
