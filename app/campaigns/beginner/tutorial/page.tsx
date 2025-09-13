@@ -235,6 +235,9 @@ function DiceRoller({
   );
 }
 
+// Import the party health card component
+import PartyHealthCard from '../../../../components/PartyHealthCard';
+
 function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }) {
   const [userParty, setUserParty] = useState<Hero[]>([]);
 
@@ -334,6 +337,22 @@ export default function ProofOfConcept() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [chatBoxes, setChatBoxes] = useState<ChatBox[]>([]);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  
+  // Party data for health tracking
+  const [partyData, setPartyData] = useState<Hero[]>([]);
+
+  // Load party data
+  useEffect(() => {
+    const savedParty = localStorage.getItem('myParty');
+    if (savedParty) {
+      try {
+        const party = JSON.parse(savedParty);
+        setPartyData(party);
+      } catch (error) {
+        console.error('Failed to parse saved party:', error);
+      }
+    }
+  }, []);
 
   const nodeInfo: Record<string, { title: string; description: string; content: string }> = {
     'node1': {
@@ -1486,6 +1505,9 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
         bridgeOpen={bridgeOpen}
         onDiceRoll={handleDiceRoll} 
       />
+
+      {/* Party Health Card */}
+      <PartyHealthCard heroes={partyData} />
 
       {/* Chat Boxes */}
       {chatBoxes.map((chatBox) => (
