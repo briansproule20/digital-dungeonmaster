@@ -998,7 +998,7 @@ ON YOUR TURN, YOU CAN:
 - Interact with one object for free
 - Communicate with the other players in your party
 
-Common Actions
+WHEN ASKED WHAT YOU WANT TO DO, HERE ARE YOUR OPTIONS: Common Actions
 Attack - Make one weapon or spell attack related to your character's abilities
 Cast a Spell - Most spells take an action related to your character's abilities
 Dash - Move again (double your movement)
