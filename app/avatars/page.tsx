@@ -43,10 +43,13 @@ export default function AvatarsPage() {
           
           // Fix any avatars that might have been stored with object image_urls
           const fixedAvatars = avatars.map((avatar: Avatar) => {
-            if (avatar.image_url && typeof avatar.image_url === 'object' && avatar.image_url.base64Data) {
-              // Convert old object format to data URL
-              const dataUrl = `data:${avatar.image_url.mediaType || 'image/png'};base64,${avatar.image_url.base64Data}`;
-              return { ...avatar, image_url: dataUrl };
+            if (avatar.image_url && typeof avatar.image_url === 'object' && avatar.image_url !== null) {
+              const imageObj = avatar.image_url as any;
+              if (imageObj.base64Data) {
+                // Convert old object format to data URL
+                const dataUrl = `data:${imageObj.mediaType || 'image/png'};base64,${imageObj.base64Data}`;
+                return { ...avatar, image_url: dataUrl };
+              }
             }
             return avatar;
           });
