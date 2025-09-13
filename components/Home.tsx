@@ -68,11 +68,8 @@ export const Home = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
               Digital Dungeon Master
             </h1>
-            <p className="text-xl text-gray-700 mb-4 leading-relaxed">
-              Practice your D&D skills, experiment with different AI personalities, or just have fun exploring fantasy worlds.
-            </p>
-            <p className="text-lg text-gray-500 font-medium mb-6">
-              Perfect for new players learning the ropes or experienced adventurers trying out creative scenarios.
+            <p className="text-xl text-gray-700 mb-6 leading-relaxed">
+              Practice your D&D skills, experiment with AI personalities, and explore fantasy worlds — perfect for new players learning the ropes or experienced adventurers trying creative scenarios.
             </p>
             
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-100">
