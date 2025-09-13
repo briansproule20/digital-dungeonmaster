@@ -9,11 +9,9 @@ export default function Docs() {
     { id: 'campaign-best-practices', title: 'Campaign Best Practices' },
     { id: 'what-is-dnd', title: 'What is D&D?' },
     { id: 'core-concepts', title: 'Core Concepts' },
-    { id: 'character-basics', title: 'Character Basics' },
     { id: 'dnd-classes', title: 'D&D Classes' },
     { id: 'dice-system', title: 'The Dice System' },
-    { id: 'types-of-rolls', title: 'Types of Rolls' },
-    { id: 'combat-basics', title: 'Combat Basics' },
+    { id: 'ai-turns', title: 'AI Turns' },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -108,52 +106,6 @@ export default function Docs() {
             <li><strong>DM describes what happens next</strong> - The story continues!</li>
           </ol>
 
-          <h2 id="character-basics" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Character Basics</h2>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The Six Ability Scores</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            Every character has six core abilities rated 1-20 (10-11 is average for humans):
-          </p>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
-            <li><strong>Strength (STR)</strong> - Physical power, lifting, jumping, melee attacks</li>
-            <li><strong>Dexterity (DEX)</strong> - Agility, reflexes, stealth, ranged attacks</li>
-            <li><strong>Constitution (CON)</strong> - Health, stamina, resisting poison/disease</li>
-            <li><strong>Intelligence (INT)</strong> - Reasoning, memory, knowledge</li>
-            <li><strong>Wisdom (WIS)</strong> - Awareness, insight, perception</li>
-            <li><strong>Charisma (CHA)</strong> - Force of personality, leadership, magic for some classes</li>
-          </ul>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Ability Modifiers</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">Each ability score gives you a modifier used for dice rolls:</p>
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-2 gap-4 text-sm text-black">
-              <div>
-                <div className="flex justify-between py-1"><span>Score 8-9:</span><span>-1</span></div>
-                <div className="flex justify-between py-1"><span>Score 10-11:</span><span>+0</span></div>
-                <div className="flex justify-between py-1"><span>Score 12-13:</span><span>+1</span></div>
-              </div>
-              <div>
-                <div className="flex justify-between py-1"><span>Score 14-15:</span><span>+2</span></div>
-                <div className="flex justify-between py-1"><span>Score 16-17:</span><span>+3</span></div>
-                <div className="flex justify-between py-1"><span>Score 18-19:</span><span>+4</span></div>
-              </div>
-            </div>
-            <p className="text-xs text-black mt-3">
-              <strong className="text-black">Formula:</strong> (Ability Score - 10) ÷ 2, rounded down
-            </p>
-          </div>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Proficiency Bonus</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            As your character levels up, you get better at things you're trained in. Your proficiency bonus starts at +2 and increases every few levels:
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>Levels 1-4:</strong> +2</li>
-            <li><strong>Levels 5-8:</strong> +3</li>
-            <li><strong>Levels 9-12:</strong> +4</li>
-            <li><strong>Levels 13-16:</strong> +5</li>
-            <li><strong>Levels 17-20:</strong> +6</li>
-          </ul>
 
           <h2 id="dnd-classes" className="text-2xl font-bold text-gray-900 mt-8 mb-4">D&D Classes</h2>
           
@@ -252,11 +204,6 @@ export default function Docs() {
             In our game, everything revolves around the <strong>20-sided die (d20)</strong>. This single die determines the outcome of all your actions, from sneaking past guards to casting spells to swinging swords.
           </p>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-center font-mono text-lg text-black">
-              <strong className="text-black">Basic Formula:</strong> d20 + Ability Modifier + Proficiency Bonus (if applicable) ≥ Target Number
-            </p>
-          </div>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">How the d20 Works</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
@@ -275,61 +222,17 @@ export default function Docs() {
             <li><strong>They cancel out:</strong> If you have both, roll normally</li>
           </ul>
 
-          <h2 id="types-of-rolls" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Types of Rolls</h2>
 
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Ability Checks</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            Test if you can do something. Roll d20 + ability modifier (+ proficiency if you're good at it).
-          </p>
-          <p className="text-gray-700 font-semibold mb-2">Common Checks:</p>
+          <h2 id="ai-turns" className="text-2xl font-bold text-gray-900 mt-8 mb-4">AI Turns</h2>
+
+          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">What AI Characters Can Do</h3>
+          <p className="text-gray-700 leading-relaxed mb-4">On an AI character's turn, they can:</p>
           <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>Strength (Athletics)</strong> - Climbing, swimming, jumping</li>
-            <li><strong>Dexterity (Acrobatics)</strong> - Balance, tumbling</li>
-            <li><strong>Dexterity (Stealth)</strong> - Hiding, moving quietly</li>
-            <li><strong>Intelligence (Investigation)</strong> - Finding clues, analyzing</li>
-            <li><strong>Wisdom (Perception)</strong> - Noticing things</li>
-            <li><strong>Charisma (Persuasion)</strong> - Convincing others</li>
-          </ul>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Attack Rolls</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            When attacking, roll d20 + ability modifier + proficiency bonus vs target's <strong>Armor Class (AC)</strong>.
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>Melee attacks</strong> usually use Strength</li>
-            <li><strong>Ranged attacks</strong> usually use Dexterity</li>
-            <li><strong>Spell attacks</strong> use your spellcasting ability</li>
-          </ul>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Saving Throws</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            Defend against dangers. Roll d20 + ability modifier + proficiency bonus (if proficient in that save).
-          </p>
-          <p className="text-gray-700 font-semibold mb-2">The Six Saves:</p>
-          <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>Strength</strong> - Resist being moved or grappled</li>
-            <li><strong>Dexterity</strong> - Dodge explosions, avoid traps</li>
-            <li><strong>Constitution</strong> - Resist poison, disease, death</li>
-            <li><strong>Intelligence</strong> - Resist mental intrusion</li>
-            <li><strong>Wisdom</strong> - Resist charm, fear, illusion</li>
-            <li><strong>Charisma</strong> - Maintain sense of self</li>
-          </ul>
-
-          <h2 id="combat-basics" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Combat Basics</h2>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Initiative</h3>
-          <p className="text-gray-700 leading-relaxed mb-6">
-            At the start of combat, everyone rolls d20 + Dex modifier. Act in order from highest to lowest.
-          </p>
-
-          <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Your Turn</h3>
-          <p className="text-gray-700 leading-relaxed mb-4">On your turn, you can:</p>
-          <ul className="list-disc list-inside space-y-1 text-gray-700 mb-6">
-            <li><strong>Move</strong> up to your speed (usually 30 feet)</li>
+            <li><strong>Move</strong> up to their speed (usually 30 feet)</li>
             <li>Take <strong>one action</strong></li>
-            <li>Take <strong>one bonus action</strong> (if you have abilities that use bonus actions)</li>
+            <li>Take <strong>one bonus action</strong> (if they have abilities that use bonus actions)</li>
             <li><strong>Interact</strong> with one object for free</li>
-            <li><strong>Communicate</strong> briefly</li>
+            <li><strong>Speak or communicate</strong> briefly</li>
           </ul>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Common Actions</h3>
@@ -345,14 +248,14 @@ export default function Docs() {
           </ul>
 
           <div className="bg-gray-50 border rounded-lg p-4 mt-8">
-            <h3 className="font-semibold text-gray-900 mb-3">Difficulty Classes (DC)</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">Target Numbers</h3>
             <div className="space-y-1 text-sm text-gray-700">
-              <div className="flex justify-between"><span>Very Easy</span><span className="font-mono">DC 5</span></div>
-              <div className="flex justify-between"><span>Easy</span><span className="font-mono">DC 10</span></div>
-              <div className="flex justify-between"><span>Medium</span><span className="font-mono">DC 15</span></div>
-              <div className="flex justify-between"><span>Hard</span><span className="font-mono">DC 20</span></div>
-              <div className="flex justify-between"><span>Very Hard</span><span className="font-mono">DC 25</span></div>
-              <div className="flex justify-between"><span>Nearly Impossible</span><span className="font-mono">DC 30</span></div>
+              <div className="flex justify-between"><span>Very Easy</span><span className="font-mono">5+</span></div>
+              <div className="flex justify-between"><span>Easy</span><span className="font-mono">8+</span></div>
+              <div className="flex justify-between"><span>Medium</span><span className="font-mono">12+</span></div>
+              <div className="flex justify-between"><span>Hard</span><span className="font-mono">15+</span></div>
+              <div className="flex justify-between"><span>Very Hard</span><span className="font-mono">18+</span></div>
+              <div className="flex justify-between"><span>Nearly Impossible</span><span className="font-mono">20+</span></div>
             </div>
           </div>
 
