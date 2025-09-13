@@ -898,11 +898,11 @@ ${missionBriefing}
 
 You are a PLAYER CHARACTER ${areaContexts[area as keyof typeof areaContexts] || 'in this situation'}. Based on your background and personality, respond with your character's thoughts, concerns, or tactical suggestions. Take initiative - propose ideas, voice concerns, or suggest actions based on your expertise. Do NOT ask the user what to do - you are the character making decisions. Do NOT say your name or identify yourself - just speak naturally as the character. 
 
-FOR TURN-BASED PARTY DIALOGUE: When multiple party members are present, contribute to the group discussion with tactical insights, concerns, or suggestions that reflect your character's unique perspective and expertise. Build on what others have said while staying true to your character's personality and background.
+FOR TURN-BASED PARTY DIALOGUE: You are in an active group conversation. Build naturally on what the previous speaker just said - agree, disagree, add to their idea, ask follow-up questions, or pivot the discussion. Reference their specific suggestions directly ("That's smart", "I disagree because...", "Building on that...", "What if we also..."). Make it feel like a real conversation where each person's input matters and influences what you say next. Be conversational, not formal.
 
 Keep responses engaging but concise (2-3 sentences max).
 
-CRITICAL REMINDER: You are ONLY ${hero.name}. You do NOT speak for other characters. You do NOT mention other characters by name. You do NOT describe what other characters are doing. You do NOT act as the DM. You respond only as yourself with your own thoughts and feelings.
+CRITICAL REMINDER: You are ONLY ${hero.name}. You do NOT speak for other characters. You do NOT describe what other characters are doing. You do NOT act as the DM. You CAN reference ideas and suggestions made by others, but do NOT put words in their mouths or speak on their behalf. Respond only as yourself with your own thoughts and feelings about what's been discussed.
 
 ${campaignContext}`;
   };
@@ -1172,15 +1172,24 @@ ${campaignContext}`;
           throw new Error('No current speaker found');
         }
 
+        // Get all campaign chat history to include in the conversation
+        const campaignHistory = generateCampaignHistory();
+        
+        // Combine campaign history with current chat messages
+        const allMessages = [
+          ...campaignHistory,
+          ...chatHistory.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }))
+        ].concat([{ role: 'user', content: message }]);
+
         // Generate response for current speaker
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            messages: chatHistory.map(msg => ({
-              role: msg.sender === 'user' ? 'user' : 'assistant',
-              content: msg.text
-            })).concat([{ role: 'user', content: message }]),
+            messages: allMessages,
             // SYSTEM PROMPT #1: CAMPAIGN PROMPT (Unified)
             // Used for: All campaign area responses AND turn-based party dialogue
             // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
@@ -1216,6 +1225,19 @@ ${campaignContext}`;
                 }
               : box
           ));
+
+          // Auto-continue conversation if we have recent activity (max 3 auto-responses)
+          const recentMessages = chatHistory.filter(msg => 
+            msg.sender === 'hero' && 
+            Date.now() - parseInt(msg.id || '0') < 30000 // Last 30 seconds
+          );
+          
+          if (recentMessages.length < 4 && partyMembers.length > 1) {
+            // Trigger next character after short delay
+            setTimeout(() => {
+              handleChatMessage(heroId, `Continue the conversation based on what ${currentSpeaker.name} just said.`);
+            }, 2000);
+          }
         } else {
           throw new Error(`API call failed: ${response.status}`);
         }
