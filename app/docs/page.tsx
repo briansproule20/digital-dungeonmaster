@@ -6,6 +6,7 @@ export default function Docs() {
   const [activeSection, setActiveSection] = useState('what-is-dnd');
 
   const sections = [
+    { id: 'campaign-best-practices', title: 'Campaign Best Practices' },
     { id: 'what-is-dnd', title: 'What is D&D?' },
     { id: 'core-concepts', title: 'Core Concepts' },
     { id: 'character-basics', title: 'Character Basics' },
@@ -75,8 +76,13 @@ export default function Docs() {
         {/* Main Content */}
         <main className="flex-1">
           <article className="bg-white rounded-lg shadow-sm border p-8 prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black prose-strong:text-black">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Dungeons & Dragons 5th Edition: Beginner's Guide</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Beginner's Guide</h1>
           <p className="text-xl text-gray-600 italic mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
+
+          <h2 id="campaign-best-practices" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Campaign Best Practices</h2>
+          <p className="text-gray-700 leading-relaxed mb-6">
+            [Content to be added by user]
+          </p>
 
           <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
           <p className="text-gray-700 leading-relaxed mb-6">

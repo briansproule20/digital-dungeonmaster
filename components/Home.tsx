@@ -77,11 +77,19 @@ export const Home = () => {
             
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-100">
               <h2 className="text-xl font-semibold text-gray-800 mb-3">How It Works</h2>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed mb-4">
                 Act as a digital DM guiding your team of AI-created heroes on epic campaigns. Create unique characters with detailed backstories, 
                 then watch as they come to life in interactive adventures. Our system adapts to your choices, 
                 creating dynamic storylines where your heroes' personalities shine through every decision and battle.
               </p>
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <a 
+                  href="/docs" 
+                  className="text-blue-600 hover:text-blue-800 font-medium underline decoration-2 underline-offset-2"
+                >
+                  Check out our beginner's guide →
+                </a>
+              </div>
             </div>
           </div>
         </div>
