@@ -382,12 +382,14 @@ export default function ProofOfConcept() {
   const [missionBriefingSummary, setMissionBriefingSummary] = useState<string>('');
   const [missionBriefingCompleted, setMissionBriefingCompleted] = useState(false);
   const [activeNode, setActiveNode] = useState<string>('node1'); // Default to Mission Briefing
+  const [areaSummaries, setAreaSummaries] = useState<{[key: string]: string}>({});
+  const [completedAreas, setCompletedAreas] = useState<Set<string>>(new Set());
   
-  // Function to generate mission briefing summary
-  const generateMissionBriefingSummary = async (messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
+  // Function to generate area summary for any area
+  const generateAreaSummary = async (areaName: string, messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
     try {
-      // Extract key information from the mission briefing
-      const briefingText = messages.map(msg => {
+      // Extract key information from the area conversation
+      const areaText = messages.map(msg => {
         if (msg.sender === 'hero' && msg.speaker === 'Narrator') {
           return `Narrator: ${msg.text}`;
         } else if (msg.sender === 'user') {
@@ -399,14 +401,14 @@ export default function ProofOfConcept() {
       }).join('\n\n');
 
       // Create a summary prompt
-      const summaryPrompt = `Please create a concise summary of the mission briefing conversation below. Focus on:
-1. The mission objective
-2. Key information discovered
-3. Important decisions made by the party
-4. Current situation and next steps
+      const summaryPrompt = `Please create a concise summary of the ${areaName} conversation below. Focus on:
+1. Key discoveries made in this area
+2. Important decisions made by the party
+3. Resources or information obtained
+4. Current situation and what the party learned
 
-Mission Briefing Conversation:
-${briefingText}
+${areaName} Conversation:
+${areaText}
 
 Please provide a clear, actionable summary that can be used as context for future areas of the campaign.`;
 
@@ -417,21 +419,26 @@ Please provide a clear, actionable summary that can be used as context for futur
         },
         body: JSON.stringify({
           prompt: summaryPrompt,
-          context: 'mission_briefing_summary'
+          context: `${areaName.toLowerCase().replace(/\s+/g, '_')}_summary`
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        return data.prompt || 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+        return data.prompt || `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
       } else {
         // Fallback summary if API fails
-        return 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+        return `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
       }
     } catch (error) {
-      console.error('Failed to generate mission briefing summary:', error);
-      return 'Mission briefing completed. The party has received their initial orders and is ready to explore the ship.';
+      console.error(`Failed to generate ${areaName} summary:`, error);
+      return `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
     }
+  };
+
+  // Legacy function for backward compatibility
+  const generateMissionBriefingSummary = async (messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
+    return generateAreaSummary('Mission Briefing', messages);
   };
 
   // Function to unlock modules based on progression
@@ -442,16 +449,47 @@ Please provide a clear, actionable summary that can be used as context for futur
       return newSet;
     });
 
-    // Generate mission briefing summary if this is the first unlock after briefing
-    if (moduleIds.includes('node2') || moduleIds.includes('node3')) {
+    // Generate summaries from all completed areas when unlocking new areas
+    if (moduleIds.includes('node2') || moduleIds.includes('node3') || moduleIds.includes('node4') || moduleIds.includes('node5')) {
+      const newSummaries = { ...areaSummaries };
+      
+      // Generate summary for mission briefing if not already completed
       if (!missionBriefingCompleted && briefingMessages.length > 0) {
-        const summary = await generateMissionBriefingSummary(briefingMessages);
-        setMissionBriefingSummary(summary);
+        const briefingSummary = await generateAreaSummary('Mission Briefing', briefingMessages);
+        newSummaries['missionBriefing'] = briefingSummary;
+        setMissionBriefingSummary(briefingSummary);
         setMissionBriefingCompleted(true);
-        
-        // Save summary to localStorage
-        localStorage.setItem('missionBriefingSummary', summary);
+        setCompletedAreas(prev => new Set(Array.from(prev).concat(['missionBriefing'])));
       }
+      
+      // Generate summaries for other completed areas
+      if (medicalBayMessages.length > 0 && !completedAreas.has('medicalBay')) {
+        const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
+        newSummaries['medicalBay'] = medicalSummary;
+        setCompletedAreas(prev => new Set(Array.from(prev).concat(['medicalBay'])));
+      }
+      
+      if (armoryMessages.length > 0 && !completedAreas.has('armory')) {
+        const armorySummary = await generateAreaSummary('Armory', armoryMessages);
+        newSummaries['armory'] = armorySummary;
+        setCompletedAreas(prev => new Set(Array.from(prev).concat(['armory'])));
+      }
+      
+      if (captainsQuartersMessages.length > 0 && !completedAreas.has('captainsQuarters')) {
+        const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
+        newSummaries['captainsQuarters'] = quartersSummary;
+        setCompletedAreas(prev => new Set(Array.from(prev).concat(['captainsQuarters'])));
+      }
+      
+      setAreaSummaries(newSummaries);
+      
+      // Debug logging
+      console.log('Generated summaries:', newSummaries);
+      console.log('Completed areas:', Array.from(completedAreas));
+      
+      // Save all summaries to localStorage
+      localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
+      localStorage.setItem('completedAreas', JSON.stringify(Array.from(completedAreas)));
     }
 
     // Implement branching path logic - Medical Bay and Armory are mutually exclusive
@@ -512,7 +550,7 @@ Please provide a clear, actionable summary that can be used as context for futur
       prevNodes.map(node => {
         if (moduleIds.includes(node.id)) {
           // Permanently remove lock emoji and update styling
-          const label = node.data.label.replace('🔒 ', '');
+          const label = (node.data.label as string).replace('🔒 ', '');
           return {
             ...node,
             style: { ...node.style, color: '#000', opacity: 1 },
@@ -530,13 +568,27 @@ Please provide a clear, actionable summary that can be used as context for futur
     saveUnlockProgress(); // Save progress whenever active node changes
   };
 
+  // Function to get current area based on active node
+  const getCurrentArea = () => {
+    switch (activeNode) {
+      case 'node1': return 'missionBriefing';
+      case 'node2': return 'medicalBay';
+      case 'node3': return 'armory';
+      case 'node4': return 'captainsQuarters';
+      case 'node5': return 'bridge';
+      default: return 'missionBriefing';
+    }
+  };
+
   // Function to save unlock progress
   const saveUnlockProgress = () => {
     const progressData = {
       unlockedModules: Array.from(unlockedModules),
       activeNode,
       missionBriefingCompleted,
-      missionBriefingSummary
+      missionBriefingSummary,
+      areaSummaries,
+      completedAreas: Array.from(completedAreas)
     };
     localStorage.setItem('campaignProgress', JSON.stringify(progressData));
   };
@@ -551,11 +603,23 @@ Please provide a clear, actionable summary that can be used as context for futur
         setActiveNode(progressData.activeNode || 'node1');
         setMissionBriefingCompleted(progressData.missionBriefingCompleted || false);
         setMissionBriefingSummary(progressData.missionBriefingSummary || '');
+        setAreaSummaries(progressData.areaSummaries || {});
+        setCompletedAreas(new Set(progressData.completedAreas || []));
         
-        // Also load from separate localStorage key for backward compatibility
+        // Also load from separate localStorage keys for backward compatibility
         const savedSummary = localStorage.getItem('missionBriefingSummary');
         if (savedSummary) {
           setMissionBriefingSummary(savedSummary);
+        }
+        
+        const savedAreaSummaries = localStorage.getItem('areaSummaries');
+        if (savedAreaSummaries) {
+          setAreaSummaries(JSON.parse(savedAreaSummaries));
+        }
+        
+        const savedCompletedAreas = localStorage.getItem('completedAreas');
+        if (savedCompletedAreas) {
+          setCompletedAreas(new Set(JSON.parse(savedCompletedAreas)));
         }
       }
     } catch (error) {
@@ -573,7 +637,7 @@ Please provide a clear, actionable summary that can be used as context for futur
                            (node.id !== 'node1' && isUnlocked);
         
         // Always remove lock emoji from unlocked nodes
-        const label = isUnlocked ? node.data.label.replace('🔒 ', '') : node.data.label;
+          const label = isUnlocked ? (node.data.label as string).replace('🔒 ', '') : node.data.label;
         
         if (isActive && isUnlocked) {
           // Active node - bright highlight
@@ -896,52 +960,6 @@ Please provide a clear, actionable summary that can be used as context for futur
     return context;
   };
 
-  const generateCampaignHistory = () => {
-    const campaignMessages: Array<{role: 'user' | 'assistant', content: string}> = [];
-    
-    // Load ALL saved chat data from localStorage
-    const allAreas = [
-      { name: 'Mission Briefing', messages: loadCampaignChat('missionBriefing') },
-      { name: 'Medical Bay', messages: loadCampaignChat('medicalBay') },
-      { name: 'Armory', messages: loadCampaignChat('armory') },
-      { name: 'Captain\'s Quarters', messages: loadCampaignChat('captainsQuarters') },
-      { name: 'Bridge', messages: loadCampaignChat('bridge') }
-    ];
-    
-    // Add a system message to introduce the campaign history
-    campaignMessages.push({
-      role: 'assistant',
-      content: '**CAMPAIGN HISTORY - Previous conversations across all areas:**'
-    });
-    
-    allAreas.forEach(area => {
-      if (area.messages.length > 0) {
-        // Add area header
-        campaignMessages.push({
-          role: 'assistant',
-          content: `**${area.name}:**`
-        });
-        
-        // Add all messages from this area
-        area.messages.forEach((msg: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}) => {
-          if (msg.sender === 'user') {
-            campaignMessages.push({
-              role: 'user',
-              content: msg.text
-            });
-          } else if (msg.sender === 'hero' && msg.speaker) {
-            campaignMessages.push({
-              role: 'assistant',
-              content: `**${msg.speaker}:** ${msg.text}`
-            });
-          }
-        });
-      }
-    });
-    
-    console.log('Generated Campaign History:', campaignMessages);
-    return campaignMessages;
-  };
 
 
   const startNewCampaign = () => {
@@ -955,6 +973,8 @@ Please provide a clear, actionable summary that can be used as context for futur
       setMissionBriefingCompleted(false);
       setMissionBriefingSummary('');
       setActiveNode('node1'); // Reset to Mission Briefing
+      setAreaSummaries({});
+      setCompletedAreas(new Set());
       
       // Reset all chat areas
       setBriefingMessages([]);
@@ -1027,6 +1047,8 @@ Please provide a clear, actionable summary that can be used as context for futur
       // Clear localStorage campaign progress
       localStorage.removeItem('campaignProgress');
       localStorage.removeItem('missionBriefingSummary');
+      localStorage.removeItem('areaSummaries');
+      localStorage.removeItem('completedAreas');
     }
   };
 
@@ -1128,7 +1150,7 @@ Please provide a clear, actionable summary that can be used as context for futur
     if (unlockedModules.size > 0) {
       saveUnlockProgress();
     }
-  }, [unlockedModules, activeNode, missionBriefingCompleted, missionBriefingSummary]);
+  }, [unlockedModules, activeNode, missionBriefingCompleted, missionBriefingSummary, areaSummaries, completedAreas]);
 
   // Auto-scroll to bottom when briefing messages change or when typing
   useEffect(() => {
@@ -1220,7 +1242,7 @@ Please provide a clear, actionable summary that can be used as context for futur
     if (!unlockedModules.has(node.id)) {
       // Allow unlocking by clicking - show confirmation modal
       console.log('Setting locked module:', node.data.label, 'node ID:', node.id);
-      setLockedModuleName(node.data.label.replace('🔒 ', ''));
+      setLockedModuleName((node.data.label as string).replace('🔒 ', ''));
       setNodeToUnlock(node.id);
       setShowLockedModal(true);
       return;
@@ -1384,7 +1406,15 @@ PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'Y
 
 MISSION: You've awakened from cryosleep in a locked cargo hold aboard an unknown ship. Your memories are hazy, but you need to escape. The ship appears operational but you don't know where you are. Your objective: investigate, commandeer the ship, and escape. Work together with your party - your survival depends on it.
 
-CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.${(missionBriefingCompleted && missionBriefingSummary && area !== 'missionBriefing') ? `\n\nMISSION BRIEFING SUMMARY: ${missionBriefingSummary}` : ''}
+CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.${(() => {
+  const summaries = Object.entries(areaSummaries)
+    .filter(([areaKey, _]) => areaKey !== area) // Don't include current area summary
+    .map(([areaKey, summary]) => `\n\n${areaKey.toUpperCase().replace(/([A-Z])/g, ' $1').trim()} SUMMARY: ${summary}`)
+    .join('');
+  console.log('System prompt summaries for area', area, ':', summaries);
+  console.log('Available areaSummaries:', areaSummaries);
+  return summaries;
+})()}
 
 D&D PLAYER RULES:
 - You are a PLAYER CHARACTER, not the DM
@@ -1677,12 +1707,8 @@ RESPONSE REQUIREMENTS:
           throw new Error('No current speaker found');
         }
 
-        // Get all campaign chat history to include in the conversation
-        const campaignHistory = generateCampaignHistory();
-        
-        // Combine campaign history with current chat messages
+        // Use current chat messages only - campaign context is now handled via system prompt summary
         const allMessages = [
-          ...campaignHistory,
           ...chatHistory.map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.text
@@ -1698,7 +1724,7 @@ RESPONSE REQUIREMENTS:
             // SYSTEM PROMPT #1: CAMPAIGN PROMPT (Unified)
             // Used for: All campaign area responses AND turn-based party dialogue
             // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
-            heroSystemPrompt: generateCampaignSystemPrompt(currentSpeaker, 'missionBriefing')
+            heroSystemPrompt: generateCampaignSystemPrompt(currentSpeaker, getCurrentArea())
           })
         });
 
