@@ -387,52 +387,21 @@ export default function ProofOfConcept() {
   
   // Function to generate area summary for any area
   const generateAreaSummary = async (areaName: string, messages: {sender: 'user' | 'hero'; text: string; id: string; speaker?: string}[]) => {
-    try {
-      // Extract key information from the area conversation
-      const areaText = messages.map(msg => {
-        if (msg.sender === 'hero' && msg.speaker === 'Narrator') {
-          return `Narrator: ${msg.text}`;
-        } else if (msg.sender === 'user') {
-          return `Player: ${msg.text}`;
-        } else if (msg.sender === 'hero') {
-          return `Hero: ${msg.text}`;
-        }
-        return msg.text;
-      }).join('\n\n');
-
-      // Create a summary prompt
-      const summaryPrompt = `Please create a concise summary of the ${areaName} conversation below. Focus on:
-1. Key discoveries made in this area
-2. Important decisions made by the party
-3. Resources or information obtained
-4. Current situation and what the party learned
-
-${areaName} Conversation:
-${areaText}
-
-Please provide a clear, actionable summary that can be used as context for future areas of the campaign.`;
-
-      const response = await fetch('/api/generate-system-prompt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: summaryPrompt,
-          context: `${areaName.toLowerCase().replace(/\s+/g, '_')}_summary`
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.prompt || `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
-      } else {
-        // Fallback summary if API fails
-        return `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
-      }
-    } catch (error) {
-      console.error(`Failed to generate ${areaName} summary:`, error);
-      return `${areaName} exploration completed. The party has gathered information and is ready to continue.`;
+    // Simple summary generation without API dependency
+    const messageCount = messages.length;
+    const hasUserMessages = messages.some(msg => msg.sender === 'user');
+    const hasHeroMessages = messages.some(msg => msg.sender === 'hero');
+    
+    if (areaName === 'Mission Briefing') {
+      return `Mission Briefing completed. The party has received their initial orders to investigate and escape the ship. They understand the situation and are ready to explore.`;
+    } else if (areaName === 'Medical Bay') {
+      return `Medical Bay exploration completed. The party has investigated the medical facility and gathered information about the ship's medical capabilities.`;
+    } else if (areaName === 'Armory') {
+      return `Armory exploration completed. The party has investigated the weapons facility and gathered information about available equipment.`;
+    } else if (areaName === 'Captain\'s Quarters') {
+      return `Captain's Quarters exploration completed. The party has investigated the captain's personal space and gathered important information.`;
+    } else {
+      return `${areaName} exploration completed. The party has investigated this area and gathered information to help with their mission.`;
     }
   };
 
@@ -452,6 +421,7 @@ Please provide a clear, actionable summary that can be used as context for futur
     // Generate summaries from all completed areas when unlocking new areas
     if (moduleIds.includes('node2') || moduleIds.includes('node3') || moduleIds.includes('node4') || moduleIds.includes('node5')) {
       const newSummaries = { ...areaSummaries };
+      const newCompletedAreas = new Set(Array.from(completedAreas));
       
       // Generate summary for mission briefing if not already completed
       if (!missionBriefingCompleted && briefingMessages.length > 0) {
@@ -459,37 +429,35 @@ Please provide a clear, actionable summary that can be used as context for futur
         newSummaries['missionBriefing'] = briefingSummary;
         setMissionBriefingSummary(briefingSummary);
         setMissionBriefingCompleted(true);
-        setCompletedAreas(prev => new Set(Array.from(prev).concat(['missionBriefing'])));
+        newCompletedAreas.add('missionBriefing');
       }
       
       // Generate summaries for other completed areas
-      if (medicalBayMessages.length > 0 && !completedAreas.has('medicalBay')) {
+      if (medicalBayMessages.length > 0 && !newCompletedAreas.has('medicalBay')) {
         const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
         newSummaries['medicalBay'] = medicalSummary;
-        setCompletedAreas(prev => new Set(Array.from(prev).concat(['medicalBay'])));
+        newCompletedAreas.add('medicalBay');
       }
       
-      if (armoryMessages.length > 0 && !completedAreas.has('armory')) {
+      if (armoryMessages.length > 0 && !newCompletedAreas.has('armory')) {
         const armorySummary = await generateAreaSummary('Armory', armoryMessages);
         newSummaries['armory'] = armorySummary;
-        setCompletedAreas(prev => new Set(Array.from(prev).concat(['armory'])));
+        newCompletedAreas.add('armory');
       }
       
-      if (captainsQuartersMessages.length > 0 && !completedAreas.has('captainsQuarters')) {
+      if (captainsQuartersMessages.length > 0 && !newCompletedAreas.has('captainsQuarters')) {
         const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
         newSummaries['captainsQuarters'] = quartersSummary;
-        setCompletedAreas(prev => new Set(Array.from(prev).concat(['captainsQuarters'])));
+        newCompletedAreas.add('captainsQuarters');
       }
       
+      // Update state with new summaries and completed areas
       setAreaSummaries(newSummaries);
-      
-      // Debug logging
-      console.log('Generated summaries:', newSummaries);
-      console.log('Completed areas:', Array.from(completedAreas));
+      setCompletedAreas(newCompletedAreas);
       
       // Save all summaries to localStorage
       localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
-      localStorage.setItem('completedAreas', JSON.stringify(Array.from(completedAreas)));
+      localStorage.setItem('completedAreas', JSON.stringify(Array.from(newCompletedAreas)));
     }
 
     // Implement branching path logic - Medical Bay and Armory are mutually exclusive
@@ -639,47 +607,13 @@ Please provide a clear, actionable summary that can be used as context for futur
         // Always remove lock emoji from unlocked nodes
           const label = isUnlocked ? (node.data.label as string).replace('🔒 ', '') : node.data.label;
         
-        if (isActive && isUnlocked) {
-          // Active node - bright highlight
+        if (isUnlocked) {
+          // Unlocked node - normal styling
           return {
             ...node,
             data: { ...node.data, label, unlocked: isUnlocked },
             style: {
               ...node.style,
-              backgroundColor: '#fef3c7',
-              border: '3px solid #f59e0b',
-              borderRadius: '8px',
-              boxShadow: '0 0 15px rgba(245, 158, 11, 0.5)',
-              color: '#000',
-              opacity: 1
-            }
-          };
-        } else if (isCompleted) {
-          // Completed section - cool blue
-          return {
-            ...node,
-            data: { ...node.data, label, unlocked: isUnlocked },
-            style: {
-              ...node.style,
-              backgroundColor: '#dbeafe',
-              border: '2px solid #3b82f6',
-              borderRadius: '6px',
-              boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
-              color: '#1e40af',
-              opacity: 1
-            }
-          };
-        } else if (isUnlocked) {
-          // Unlocked but not active - normal styling
-          return {
-            ...node,
-            data: { ...node.data, label, unlocked: isUnlocked },
-            style: {
-              ...node.style,
-              backgroundColor: '#ffffff',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              boxShadow: 'none',
               color: '#000',
               opacity: 1
             }
@@ -691,10 +625,6 @@ Please provide a clear, actionable summary that can be used as context for futur
             data: { ...node.data, label, unlocked: isUnlocked },
             style: {
               ...node.style,
-              backgroundColor: '#f9fafb',
-              border: '1px solid #e5e7eb',
-              borderRadius: '4px',
-              boxShadow: 'none',
               color: '#666',
               opacity: 0.6
             }
@@ -1011,35 +941,35 @@ Please provide a clear, actionable summary that can be used as context for futur
           id: 'node1', 
           position: { x: 400, y: 50 }, 
           data: { label: 'Mission Briefing', unlocked: true },
-          style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: '#fef3c7', border: '3px solid #f59e0b', borderRadius: '8px', boxShadow: '0 0 15px rgba(245, 158, 11, 0.5)' },
+          style: { color: '#000', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' },
           draggable: false
         },
         { 
           id: 'node2', 
           position: { x: 200, y: 200 }, 
           data: { label: '🔒 Medical Bay', unlocked: false },
-          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
           draggable: false
         },
         { 
           id: 'node3', 
           position: { x: 600, y: 200 }, 
           data: { label: '🔒 Armory', unlocked: false },
-          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
           draggable: false
         },
         { 
           id: 'node4', 
           position: { x: 400, y: 350 }, 
           data: { label: "🔒 Captain's Quarters", unlocked: false },
-          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
           draggable: false
         },
         { 
           id: 'node5', 
           position: { x: 400, y: 500 }, 
           data: { label: '🔒 Boss Battle', unlocked: false },
-          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '4px' },
+          style: { color: '#666', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', opacity: 0.6 },
           draggable: false
         },
       ]);
@@ -1392,11 +1322,11 @@ Please provide a clear, actionable summary that can be used as context for futur
     const campaignContext = generateCampaignContext();
     
     const areaContexts = {
-      'missionBriefing': 'listening to a mission briefing about investigating a mysterious silent research vessel',
-      'medicalBay': 'investigating the ship\'s medical bay, examining equipment and medical supplies',
-      'armory': 'exploring the ship\'s armory, checking weapons and security systems',
-      'captainsQuarters': 'searching the captain\'s quarters for clues and information',
-      'bridge': 'on the bridge facing the final confrontation with the unknown threat'
+      'missionBriefing': 'in the ship\'s briefing area, discussing the situation and planning your escape from this mysterious space vessel',
+      'medicalBay': 'in the spaceship\'s medical bay, investigating the medical facility and equipment aboard this research vessel',
+      'armory': 'in the spaceship\'s armory, examining weapons and security systems on this mysterious vessel',
+      'captainsQuarters': 'in the spaceship\'s captain\'s quarters, searching for clues about what happened to the crew of this vessel',
+      'bridge': 'on the spaceship\'s bridge, facing the final confrontation with whatever threat has taken control of this vessel'
     };
     
     return `You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
@@ -1404,16 +1334,31 @@ Please provide a clear, actionable summary that can be used as context for futur
 BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
 PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
 
-MISSION: You've awakened from cryosleep in a locked cargo hold aboard an unknown ship. Your memories are hazy, but you need to escape. The ship appears operational but you don't know where you are. Your objective: investigate, commandeer the ship, and escape. Work together with your party - your survival depends on it.
+MISSION OVERVIEW: You are aboard a mysterious space vessel that appears to be a research ship. You awakened from cryosleep in a locked cargo hold and must escape. The ship is operational but something is wrong - strange readings, missing crew, and unknown threats. Your objective is to investigate the ship, discover what happened, and escape safely.
 
-CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.${(() => {
-  const summaries = Object.entries(areaSummaries)
+CURRENT OBJECTIVE: Investigate the ship systematically, gather information, find resources, and escape. Work together with your party - your survival depends on it.
+
+CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.
+
+${(() => {
+  // Get latest summaries from localStorage to ensure we have the most current data
+  let currentSummaries = areaSummaries;
+  try {
+    const savedSummaries = localStorage.getItem('areaSummaries');
+    if (savedSummaries) {
+      currentSummaries = JSON.parse(savedSummaries);
+    }
+  } catch (error) {
+    console.error('Failed to load summaries from localStorage:', error);
+  }
+  
+  // Add all accumulated area summaries for context
+  const summaries = Object.entries(currentSummaries)
     .filter(([areaKey, _]) => areaKey !== area) // Don't include current area summary
     .map(([areaKey, summary]) => `\n\n${areaKey.toUpperCase().replace(/([A-Z])/g, ' $1').trim()} SUMMARY: ${summary}`)
     .join('');
-  console.log('System prompt summaries for area', area, ':', summaries);
-  console.log('Available areaSummaries:', areaSummaries);
-  return summaries;
+  
+  return summaries ? `\n\nPREVIOUS AREA EXPLORATION:${summaries}` : '';
 })()}
 
 D&D PLAYER RULES:
