@@ -13,9 +13,11 @@ const emitHealthChange = () => {
   healthChangeListeners.forEach(listener => listener());
 };
 
-const addHealthChangeListener = (listener: () => void) => {
+const addHealthChangeListener = (listener: () => void): (() => void) => {
   healthChangeListeners.add(listener);
-  return () => healthChangeListeners.delete(listener);
+  return () => {
+    healthChangeListeners.delete(listener);
+  };
 };
 
 export function useHeroHealth(heroes: Array<{ id: string }>) {
@@ -41,7 +43,9 @@ export function useHeroHealth(heroes: Array<{ id: string }>) {
     const unsubscribe = addHealthChangeListener(() => {
       setForceUpdate(prev => prev + 1);
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const updateHearts = (heroId: string, newHearts: number) => {
