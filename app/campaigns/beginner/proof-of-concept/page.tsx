@@ -1069,44 +1069,6 @@ ${campaignContext}`;
   };
 
 
-  const openGroupChat = (heroes: Hero[]) => {
-    // Create all speakers (Mission Control + party members)
-    const allSpeakers = [
-      { 
-        id: 'mission-control', 
-        name: 'Mission Control', 
-        avatar_url: '', 
-        // SYSTEM PROMPT #3: MISSION CONTROL PROMPT
-        // Used for: Mission Control character in mission briefings
-        // Context: Authoritative briefing role with crew information and mission details
-        system_prompt: `You are Mission Control leading a briefing for a space crew. The team consists of: ${heroes.map((h: Hero) => `${h.name} (${h.race} ${h.class})`).join(', ')}. Provide engaging mission briefing about the mysterious starship situation. Keep it dramatic and immersive. NEVER reference dice rolls or call for rolls - the Dungeon Master handles all dice rolling.` 
-      } as Hero,
-      ...heroes
-    ];
-
-    const groupChatBox: ChatBox = {
-      id: 'group-chat',
-      hero: allSpeakers[0], // Start with Mission Control
-      position: { x: 100, y: 100 },
-      messages: [
-        { 
-          sender: 'hero', 
-          text: `*Mission Control crackles to life*\n\n**Mission Control:** Welcome aboard, team. You've been assembled for an urgent mission. A research vessel has gone silent, and you're our only hope of discovering what happened. Your crew consists of: ${heroes.map((h: Hero) => `**${h.name}** (${h.race} ${h.class})`).join(', ')}.\n\nWhat are your questions before we begin?`, 
-          id: Date.now().toString() 
-        }
-      ],
-      isDragging: false,
-      isResizing: false,
-      size: { width: 400, height: 500 },
-      isLocked: false,
-      isTyping: false,
-      streamingContent: '',
-      currentSpeakerIndex: 0,
-      partyMembers: allSpeakers,
-      inputValue: ''
-    };
-    setChatBoxes(prev => [...prev.filter(box => box.id !== 'group-chat'), groupChatBox]);
-  };
 
   const onAvatarClick = (hero: Hero) => {
     const existingChatBox = chatBoxes.find(box => box.hero.id === hero.id);
@@ -1188,9 +1150,7 @@ ${campaignContext}`;
             // SYSTEM PROMPT #1: CAMPAIGN PROMPT (Unified)
             // Used for: All campaign area responses AND turn-based party dialogue
             // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
-            heroSystemPrompt: currentSpeaker.id === 'mission-control' 
-              ? currentSpeaker.system_prompt 
-              : generateCampaignSystemPrompt(currentSpeaker, 'missionBriefing')
+            heroSystemPrompt: generateCampaignSystemPrompt(currentSpeaker, 'missionBriefing')
           })
         });
 
