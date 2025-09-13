@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     console.log('Image URL:', result.image);
 
     return Response.json({ imageUrl: result.image });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating avatar:', error);
-    return Response.json({ error: 'Failed to generate avatar', details: error.message }, { status: 500 });
+    return Response.json({ error: 'Failed to generate avatar', details: error.message || 'Unknown error' }, { status: 500 });
   }
 }
