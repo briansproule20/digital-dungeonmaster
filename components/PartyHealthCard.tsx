@@ -16,8 +16,6 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
   const { getHearts, isHeroDead, toggleHeart } = useHeroHealth(heroes);
 
   if (heroes.length === 0) return null;
-  
-  console.log('PartyHealthCard heroes:', heroes.length, heroes.map(h => h.name));
 
   return (
     <div
@@ -63,7 +61,6 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
         {heroes.map(hero => {
           const hearts = getHearts(hero.id);
           const isDefeated = isHeroDead(hero.id);
-          console.log(`${hero.name}: ${hearts} hearts, defeated: ${isDefeated}`);
           
           return (
             <div key={hero.id} style={{

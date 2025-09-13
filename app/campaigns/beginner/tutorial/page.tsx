@@ -971,27 +971,21 @@ Summary:`;
   const generateCampaignContext = () => {
     let context = '\n\n**CAMPAIGN HISTORY - WHAT HAS HAPPENED SO FAR:**\n';
 
-    console.log('DEBUG: Generating campaign context');
-
     // Load area summaries PRIMARILY from localStorage for most reliable data
     let currentSummaries: {[key: string]: string} = {};
     try {
       const savedSummaries = localStorage.getItem('areaSummaries');
       if (savedSummaries) {
         currentSummaries = JSON.parse(savedSummaries);
-        console.log('DEBUG: Loaded summaries from localStorage:', currentSummaries);
       } else {
         // Fallback to React state if no localStorage data
         currentSummaries = areaSummaries;
-        console.log('DEBUG: Using React state summaries as fallback:', currentSummaries);
       }
     } catch (error) {
       console.error('Failed to load summaries from localStorage:', error);
       // Fallback to React state on error
       currentSummaries = areaSummaries;
     }
-
-    console.log('DEBUG: Final summaries for context generation:', currentSummaries);
 
     // Add summaries in logical order
     const areaOrder = [
@@ -1007,20 +1001,13 @@ Summary:`;
       if (currentSummaries[area.key]) {
         context += `\n**${area.name}:** ${currentSummaries[area.key]}\n`;
         hasSummaries = true;
-        console.log('DEBUG: Added', area.name, 'summary to context');
-      } else {
-        console.log('DEBUG: No summary found for', area.name);
       }
     });
 
     if (!hasSummaries) {
       context += '\nThis is your first area - no previous exploration history available yet.\n';
-      console.log('DEBUG: No summaries found for context');
-    } else {
-      console.log('DEBUG: Campaign context generated with', Object.keys(currentSummaries).length, 'summaries');
     }
 
-    console.log('DEBUG: Final Generated Campaign Context:', context);
     return context;
   };
 
@@ -1448,12 +1435,9 @@ Summary:`;
 
   // Helper function to generate unified campaign system prompt
   const generateCampaignSystemPrompt = (hero: Hero, area: string = 'general') => {
-    console.log('DEBUG: generateCampaignSystemPrompt - hero has system_prompt:', !!hero.system_prompt);
-
     if (hero.system_prompt) {
       // Add campaign context to the hero's existing system prompt
       const campaignContext = generateCampaignContext();
-      console.log('DEBUG: Adding campaign context to existing system_prompt for', hero.name);
 
       return `${hero.system_prompt}
 
@@ -1475,8 +1459,6 @@ RESPONSE REQUIREMENTS:
 
     const missionBriefing = generateMissionBriefing();
     const campaignContext = generateCampaignContext();
-
-    console.log('DEBUG: generateCampaignSystemPrompt - campaignContext:', campaignContext);
 
     const areaContexts = {
       'missionBriefing': 'in the ship\'s briefing area, discussing the situation and planning your escape from this mysterious space vessel',
@@ -1512,13 +1494,10 @@ RESPONSE REQUIREMENTS:
 - Stay in character based on your background and personality
 - Remember and reference previous events from the campaign history above`;
 
-    console.log('DEBUG: Final system prompt for', hero.name, ':', systemPrompt);
-
     return systemPrompt;
   };
 
   const handleAreaHeroResponse = async (hero: Hero, area: string) => {
-    console.log(`DEBUG: handleAreaHeroResponse called with hero: ${hero.name} (${hero.id}) in area: ${area}`);
     
     const areaStates = {
       'missionBriefing': {
@@ -1572,18 +1551,13 @@ RESPONSE REQUIREMENTS:
         'bridge': 'on the bridge facing the final confrontation with the unknown threat'
       };
 
-      console.log(`DEBUG: Generating system prompt for hero: ${hero.name} (${hero.id})`);
-      console.log('DEBUG: Hero data:', hero);
-      
       // Generate campaign context with area summaries for system prompt
       const campaignContext = generateCampaignContext();
-      
+
       // SYSTEM PROMPT #1: CAMPAIGN PROMPT
       // Used for: All campaign area responses AND turn-based party dialogue
       // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
-      console.log('DEBUG: About to call generateCampaignSystemPrompt for', hero.name, 'in area', area);
       const fullSystemPrompt = generateCampaignSystemPrompt(hero, area);
-      console.log('DEBUG: generateCampaignSystemPrompt returned. Length:', fullSystemPrompt.length);
 
       // Only include current area messages - NO CAMPAIGN HISTORY
       const allMessages = [
