@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, Background, NodeChange, EdgeChange, Connection, Node, Edge, useReactFlow, BackgroundVariant } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import ReactMarkdown from 'react-markdown';
+import { useHeroHealth } from '../../../../hooks/useHeroHealth';
 
 interface Hero {
   id: string;
@@ -237,6 +238,8 @@ function DiceRoller({
 
 // Import the party health card component
 import PartyHealthCard from '../../../../components/PartyHealthCard';
+import HeroAvatarButton from '../../../../components/HeroAvatarButton';
+import HeroTooltip from '../../../../components/HeroTooltip';
 
 function PartyAvatars({ onAvatarClick }: { onAvatarClick: (hero: Hero) => void }) {
   const [userParty, setUserParty] = useState<Hero[]>([]);
@@ -340,6 +343,9 @@ export default function ProofOfConcept() {
   
   // Party data for health tracking
   const [partyData, setPartyData] = useState<Hero[]>([]);
+  
+  // Shared health state
+  const { isHeroDead } = useHeroHealth(partyData);
 
   // Load party data
   useEffect(() => {
@@ -1577,53 +1583,60 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   }}>
                     Your Team:
                   </span>
-                  {medicalBayParty.map(hero => (
-                    <button
-                      key={hero.id}
-                      onClick={() => handleAreaHeroResponse(hero, 'medicalBay')}
-                      disabled={medicalBayTyping}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: medicalBayTyping ? '#f3f4f6' : '#ffffff',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: medicalBayTyping ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#374151'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!medicalBayTyping) {
-                          e.currentTarget.style.borderColor = '#3b82f6';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!medicalBayTyping) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                        }
-                      }}
-                    >
-                      {hero.avatar_url && (
-                        <img
-                          src={hero.avatar_url}
-                          alt={hero.name}
+                  {medicalBayParty.map(hero => {
+                    const isDead = isHeroDead(hero.id);
+                    const isDisabled = medicalBayTyping || isDead;
+                    
+                    return (
+                      <HeroTooltip key={hero.id} isDead={isDead} heroName={hero.name}>
+                        <button
+                          onClick={isDisabled ? undefined : () => handleAreaHeroResponse(hero, 'medicalBay')}
+                          disabled={isDisabled}
                           style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            backgroundColor: medicalBayTyping ? '#f3f4f6' : '#ffffff',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: isDead ? '#9ca3af' : '#374151',
+                            filter: isDead ? 'grayscale(100%) opacity(0.5)' : 'none'
                           }}
-                        />
-                      )}
-                      {hero.name}
-                    </button>
-                  ))}
+                          onMouseOver={(e) => {
+                            if (!isDisabled) {
+                              e.currentTarget.style.borderColor = '#3b82f6';
+                              e.currentTarget.style.backgroundColor = '#eff6ff';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!medicalBayTyping && !isDead) {
+                              e.currentTarget.style.borderColor = '#e5e7eb';
+                              e.currentTarget.style.backgroundColor = '#ffffff';
+                            }
+                          }}
+                        >
+                          {hero.avatar_url && (
+                            <img
+                              src={hero.avatar_url}
+                              alt={hero.name}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          )}
+                          {hero.name}
+                        </button>
+                      </HeroTooltip>
+                    );
+                  })}
                 </div>
               </div>
               <button
@@ -1833,53 +1846,61 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   }}>
                     Your Team:
                   </span>
-                  {armoryParty.map(hero => (
-                    <button
-                      key={hero.id}
-                      onClick={() => handleAreaHeroResponse(hero, 'armory')}
-                      disabled={armoryTyping}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: armoryTyping ? '#f3f4f6' : '#ffffff',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: armoryTyping ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#374151'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!armoryTyping) {
-                          e.currentTarget.style.borderColor = '#3b82f6';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!armoryTyping) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                        }
-                      }}
-                    >
-                      {hero.avatar_url && (
-                        <img
-                          src={hero.avatar_url}
-                          alt={hero.name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      )}
-                      {hero.name}
-                    </button>
-                  ))}
+                  {armoryParty.map(hero => {
+                    const isDead = isHeroDead(hero.id);
+                    const isDisabled = armoryTyping || isDead;
+                    
+                    return (
+                      <HeroTooltip key={hero.id} isDead={isDead} heroName={hero.name}>
+                        <button
+                        key={hero.id}
+                        onClick={isDisabled ? undefined : () => handleAreaHeroResponse(hero, 'armory')}
+                        disabled={isDisabled}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: armoryTyping ? '#f3f4f6' : '#ffffff',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: isDead ? '#9ca3af' : '#374151',
+                          filter: isDead ? 'grayscale(100%) opacity(0.5)' : 'none'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!isDisabled) {
+                            e.currentTarget.style.borderColor = '#3b82f6';
+                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!armoryTyping && !isDead) {
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                          }
+                        }}
+                      >
+                        {hero.avatar_url && (
+                          <img
+                            src={hero.avatar_url}
+                            alt={hero.name}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
+                        {hero.name}
+                        </button>
+                      </HeroTooltip>
+                    );
+                  })}
                 </div>
               </div>
               <button
@@ -2089,53 +2110,61 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   }}>
                     Your Team:
                   </span>
-                  {captainsQuartersParty.map(hero => (
-                    <button
-                      key={hero.id}
-                      onClick={() => handleAreaHeroResponse(hero, 'captainsQuarters')}
-                      disabled={captainsQuartersTyping}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: captainsQuartersTyping ? '#f3f4f6' : '#ffffff',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: captainsQuartersTyping ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#374151'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!captainsQuartersTyping) {
-                          e.currentTarget.style.borderColor = '#3b82f6';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!captainsQuartersTyping) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                        }
-                      }}
-                    >
-                      {hero.avatar_url && (
-                        <img
-                          src={hero.avatar_url}
-                          alt={hero.name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      )}
-                      {hero.name}
-                    </button>
-                  ))}
+                  {captainsQuartersParty.map(hero => {
+                    const isDead = isHeroDead(hero.id);
+                    const isDisabled = captainsQuartersTyping || isDead;
+                    
+                    return (
+                      <HeroTooltip key={hero.id} isDead={isDead} heroName={hero.name}>
+                        <button
+                        key={hero.id}
+                        onClick={isDisabled ? undefined : () => handleAreaHeroResponse(hero, 'captainsQuarters')}
+                        disabled={isDisabled}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: captainsQuartersTyping ? '#f3f4f6' : '#ffffff',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: isDead ? '#9ca3af' : '#374151',
+                          filter: isDead ? 'grayscale(100%) opacity(0.5)' : 'none'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!isDisabled) {
+                            e.currentTarget.style.borderColor = '#3b82f6';
+                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!captainsQuartersTyping && !isDead) {
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                          }
+                        }}
+                      >
+                        {hero.avatar_url && (
+                          <img
+                            src={hero.avatar_url}
+                            alt={hero.name}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
+                        {hero.name}
+                        </button>
+                      </HeroTooltip>
+                    );
+                  })}
                 </div>
               </div>
               <button
@@ -2345,53 +2374,61 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   }}>
                     Your Team:
                   </span>
-                  {bridgeParty.map(hero => (
-                    <button
-                      key={hero.id}
-                      onClick={() => handleAreaHeroResponse(hero, 'bridge')}
-                      disabled={bridgeTyping}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: bridgeTyping ? '#f3f4f6' : '#ffffff',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: bridgeTyping ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#374151'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!bridgeTyping) {
-                          e.currentTarget.style.borderColor = '#3b82f6';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!bridgeTyping) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                        }
-                      }}
-                    >
-                      {hero.avatar_url && (
-                        <img
-                          src={hero.avatar_url}
-                          alt={hero.name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      )}
-                      {hero.name}
-                    </button>
-                  ))}
+                  {bridgeParty.map(hero => {
+                    const isDead = isHeroDead(hero.id);
+                    const isDisabled = bridgeTyping || isDead;
+                    
+                    return (
+                      <HeroTooltip key={hero.id} isDead={isDead} heroName={hero.name}>
+                        <button
+                        key={hero.id}
+                        onClick={isDisabled ? undefined : () => handleAreaHeroResponse(hero, 'bridge')}
+                        disabled={isDisabled}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: bridgeTyping ? '#f3f4f6' : '#ffffff',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: isDead ? '#9ca3af' : '#374151',
+                          filter: isDead ? 'grayscale(100%) opacity(0.5)' : 'none'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!isDisabled) {
+                            e.currentTarget.style.borderColor = '#3b82f6';
+                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!bridgeTyping && !isDead) {
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                          }
+                        }}
+                      >
+                        {hero.avatar_url && (
+                          <img
+                            src={hero.avatar_url}
+                            alt={hero.name}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
+                        {hero.name}
+                        </button>
+                      </HeroTooltip>
+                    );
+                  })}
                 </div>
               </div>
               <button
@@ -2683,53 +2720,61 @@ You are a PLAYER CHARACTER. Respond in character with personality and emotion ba
                   }}>
                     Your Team:
                   </span>
-                  {briefingParty.map(hero => (
-                    <button
-                      key={hero.id}
-                      onClick={() => handleHeroResponse(hero)}
-                      disabled={briefingTyping}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 12px',
-                        backgroundColor: briefingTyping ? '#f3f4f6' : '#ffffff',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: briefingTyping ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#374151'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!briefingTyping) {
-                          e.currentTarget.style.borderColor = '#3b82f6';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!briefingTyping) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.backgroundColor = '#ffffff';
-                        }
-                      }}
-                    >
-                      {hero.avatar_url && (
-                        <img
-                          src={hero.avatar_url}
-                          alt={hero.name}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      )}
-                      {hero.name}
-                    </button>
-                  ))}
+                  {briefingParty.map(hero => {
+                    const isDead = isHeroDead(hero.id);
+                    const isDisabled = briefingTyping || isDead;
+                    
+                    return (
+                      <HeroTooltip key={hero.id} isDead={isDead} heroName={hero.name}>
+                        <button
+                        key={hero.id}
+                        onClick={isDisabled ? undefined : () => handleHeroResponse(hero)}
+                        disabled={isDisabled}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: briefingTyping ? '#f3f4f6' : '#ffffff',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: isDead ? '#9ca3af' : '#374151',
+                          filter: isDead ? 'grayscale(100%) opacity(0.5)' : 'none'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!isDisabled) {
+                            e.currentTarget.style.borderColor = '#3b82f6';
+                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!briefingTyping && !isDead) {
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                            e.currentTarget.style.backgroundColor = '#ffffff';
+                          }
+                        }}
+                      >
+                        {hero.avatar_url && (
+                          <img
+                            src={hero.avatar_url}
+                            alt={hero.name}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        )}
+                        {hero.name}
+                        </button>
+                      </HeroTooltip>
+                    );
+                  })}
                 </div>
               </div>
               <button

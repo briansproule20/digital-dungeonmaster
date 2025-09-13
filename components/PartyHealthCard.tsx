@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useHeroHealth } from '../hooks/useHeroHealth';
 
 interface Hero {
   id: string;
@@ -13,39 +13,7 @@ interface PartyHealthCardProps {
 }
 
 export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
-  const [heroHearts, setHeroHearts] = useState<{[heroId: string]: number}>({});
-
-  // Load hero hearts from localStorage
-  useEffect(() => {
-    const newHeroHearts: {[heroId: string]: number} = {};
-    heroes.forEach(hero => {
-      const savedHearts = localStorage.getItem(`hero-hearts-${hero.id}`);
-      newHeroHearts[hero.id] = savedHearts !== null ? parseInt(savedHearts, 10) : 3;
-    });
-    setHeroHearts(newHeroHearts);
-  }, [heroes]);
-
-  const updateHearts = (heroId: string, newHearts: number) => {
-    const clampedHearts = Math.max(0, Math.min(3, newHearts));
-    setHeroHearts(prev => ({
-      ...prev,
-      [heroId]: clampedHearts
-    }));
-    localStorage.setItem(`hero-hearts-${heroId}`, clampedHearts.toString());
-  };
-
-  const toggleHeart = (heroId: string, heartIndex: number) => {
-    const currentHearts = heroHearts[heroId] ?? 3;
-    console.log(`Clicking heart ${heartIndex}, current hearts: ${currentHearts}`);
-    
-    if (heartIndex < currentHearts) {
-      // Clicking a filled heart - remove it and all hearts to the right
-      updateHearts(heroId, heartIndex);
-    } else {
-      // Clicking an empty heart - fill it and all hearts to the left
-      updateHearts(heroId, heartIndex + 1);
-    }
-  };
+  const { getHearts, isHeroDead, toggleHeart } = useHeroHealth(heroes);
 
   if (heroes.length === 0) return null;
   
@@ -93,8 +61,8 @@ export default function PartyHealthCard({ heroes }: PartyHealthCardProps) {
         gap: '8px' 
       }}>
         {heroes.map(hero => {
-          const hearts = heroHearts[hero.id] ?? 3;
-          const isDefeated = hearts === 0;
+          const hearts = getHearts(hero.id);
+          const isDefeated = isHeroDead(hero.id);
           console.log(`${hero.name}: ${hearts} hearts, defeated: ${isDefeated}`);
           
           return (
