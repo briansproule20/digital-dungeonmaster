@@ -20,6 +20,7 @@ export default function Navigation() {
     { name: 'Campaigns', href: '/campaigns' },
     { name: 'Heroes', href: '/heroes' },
     { name: 'My Party', href: '/my-party' },
+    { name: 'Avatars', href: '/avatars' },
     { name: 'Docs', href: '/docs' },
   ];
 
