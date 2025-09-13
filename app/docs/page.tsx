@@ -78,8 +78,12 @@ export default function Docs() {
           <p className="text-xl text-gray-600 italic mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
 
           <h2 id="campaign-best-practices" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Campaign Best Practices</h2>
-          <p className="text-gray-700 leading-relaxed mb-6">
+          <p className="text-gray-700 leading-relaxed mb-4">
             Our game draws inspiration from <a href="https://www.youtube.com/@DougDoug" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">DougDoug's incredible YouTube series</a> where he plays D&D with AI characters. His videos showcase the perfect blend of chaos and creativity that makes AI-driven campaigns so entertaining. We highly recommend checking out his channel for great examples of how AI characters can create hilarious adventures.
+          </p>
+          
+          <p className="text-gray-700 leading-relaxed mb-6">
+            While we provide story frameworks to get your campaigns started, you're the DM — it's your role to guide the AI characters through encounters, plot twists, and memorable moments. The more detailed and immersive you make the world, the better your AI players will respond and engage with the story.
           </p>
 
           <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
