@@ -79,7 +79,7 @@ export default function Docs() {
 
           <h2 id="campaign-best-practices" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Campaign Best Practices</h2>
           <p className="text-gray-700 leading-relaxed mb-6">
-            [Content to be added by user]
+            Our game draws inspiration from <a href="https://www.youtube.com/@DougDoug" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">DougDoug's incredible YouTube series</a> where he plays D&D with AI characters. His videos showcase the perfect blend of chaos and creativity that makes AI-driven campaigns so entertaining. We highly recommend checking out his channel for great examples of how AI characters can create hilarious adventures.
           </p>
 
           <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
