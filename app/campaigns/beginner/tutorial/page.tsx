@@ -442,6 +442,10 @@ Summary:`;
 
   // Function to unlock modules based on progression
   const unlockModules = async (moduleIds: string[]) => {
+    console.log('DEBUG: Unlocking modules:', moduleIds);
+    console.log('DEBUG: Current areaSummaries:', areaSummaries);
+    console.log('DEBUG: Current completedAreas:', Array.from(completedAreas));
+
     setUnlockedModules(prev => {
       const newSet = new Set(prev);
       moduleIds.forEach(id => newSet.add(id));
@@ -452,42 +456,57 @@ Summary:`;
     if (moduleIds.includes('node2') || moduleIds.includes('node3') || moduleIds.includes('node4') || moduleIds.includes('node5')) {
       const newSummaries = { ...areaSummaries };
       const newCompletedAreas = new Set(Array.from(completedAreas));
-      
+
+      console.log('DEBUG: Starting summary generation process');
+
       // Generate summary for mission briefing if not already completed
       if (!missionBriefingCompleted && briefingMessages.length > 0) {
+        console.log('DEBUG: Generating Mission Briefing summary with', briefingMessages.length, 'messages');
         const briefingSummary = await generateAreaSummary('Mission Briefing', briefingMessages);
+        console.log('DEBUG: About to assign summary to newSummaries. Current newSummaries:', newSummaries);
         newSummaries['missionBriefing'] = briefingSummary;
+        console.log('DEBUG: After assignment. newSummaries:', newSummaries);
         setMissionBriefingSummary(briefingSummary);
         setMissionBriefingCompleted(true);
         newCompletedAreas.add('missionBriefing');
+        console.log('DEBUG: Mission Briefing summary generated:', briefingSummary);
       }
-      
+
       // Generate summaries for other completed areas
-      if (medicalBayMessages.length > 0 && !newCompletedAreas.has('medicalBay')) {
+      if (medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
+        console.log('DEBUG: Generating Medical Bay summary with', medicalBayMessages.length, 'messages');
         const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
         newSummaries['medicalBay'] = medicalSummary;
         newCompletedAreas.add('medicalBay');
+        console.log('DEBUG: Medical Bay summary generated:', medicalSummary);
       }
-      
-      if (armoryMessages.length > 0 && !newCompletedAreas.has('armory')) {
+
+      if (armoryMessages.length > 0 && !newSummaries['armory']) {
+        console.log('DEBUG: Generating Armory summary with', armoryMessages.length, 'messages');
         const armorySummary = await generateAreaSummary('Armory', armoryMessages);
         newSummaries['armory'] = armorySummary;
         newCompletedAreas.add('armory');
+        console.log('DEBUG: Armory summary generated:', armorySummary);
       }
-      
-      if (captainsQuartersMessages.length > 0 && !newCompletedAreas.has('captainsQuarters')) {
+
+      if (captainsQuartersMessages.length > 0 && !newSummaries['captainsQuarters']) {
+        console.log('DEBUG: Generating Captain\'s Quarters summary with', captainsQuartersMessages.length, 'messages');
         const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
         newSummaries['captainsQuarters'] = quartersSummary;
         newCompletedAreas.add('captainsQuarters');
+        console.log('DEBUG: Captain\'s Quarters summary generated:', quartersSummary);
       }
-      
+
       // Update state with new summaries and completed areas
       setAreaSummaries(newSummaries);
       setCompletedAreas(newCompletedAreas);
-      
+
       // Save all summaries to localStorage
       localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
       localStorage.setItem('completedAreas', JSON.stringify(Array.from(newCompletedAreas)));
+
+      console.log('DEBUG: Final summary state saved:', newSummaries);
+      console.log('DEBUG: Final completed areas:', Array.from(newCompletedAreas));
     }
 
     // Implement branching path logic - Medical Bay and Armory are mutually exclusive
@@ -560,8 +579,68 @@ Summary:`;
     );
   };
 
+  // Function to generate summary for current area before switching
+  const generateCurrentAreaSummary = async (currentNodeId: string) => {
+    console.log('DEBUG: Generating summary for current area:', currentNodeId);
+
+    const areaMapping = {
+      'node1': { key: 'missionBriefing', name: 'Mission Briefing', messages: briefingMessages },
+      'node2': { key: 'medicalBay', name: 'Medical Bay', messages: medicalBayMessages },
+      'node3': { key: 'armory', name: 'Armory', messages: armoryMessages },
+      'node4': { key: 'captainsQuarters', name: 'Captain\'s Quarters', messages: captainsQuartersMessages },
+      'node5': { key: 'bridge', name: 'Bridge', messages: bridgeMessages }
+    };
+
+    const area = areaMapping[currentNodeId as keyof typeof areaMapping];
+    if (!area) {
+      console.log('DEBUG: No area mapping found for node:', currentNodeId);
+      return;
+    }
+
+    // Check if we already have a summary for this area
+    if (areaSummaries[area.key]) {
+      console.log('DEBUG: Summary already exists for area:', area.key);
+      return;
+    }
+
+    // Generate summary if there are messages
+    if (area.messages.length > 0) {
+      console.log('DEBUG: Generating new summary for', area.name, 'with', area.messages.length, 'messages');
+      const summary = await generateAreaSummary(area.name, area.messages);
+
+      // Update state with the new summary
+      const newSummaries = { ...areaSummaries, [area.key]: summary };
+      const newCompletedAreas = new Set(Array.from(completedAreas));
+      newCompletedAreas.add(area.key);
+
+      setAreaSummaries(newSummaries);
+      setCompletedAreas(newCompletedAreas);
+
+      // Save to localStorage immediately
+      localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
+      localStorage.setItem('completedAreas', JSON.stringify(Array.from(newCompletedAreas)));
+
+      console.log('DEBUG: Summary generated and saved for', area.name, ':', summary);
+
+      // Special handling for mission briefing
+      if (currentNodeId === 'node1') {
+        setMissionBriefingSummary(summary);
+        setMissionBriefingCompleted(true);
+      }
+    } else {
+      console.log('DEBUG: No messages found for area:', area.name);
+    }
+  };
+
   // Function to set active node and update highlighting
-  const setActiveNodeAndUpdate = (nodeId: string) => {
+  const setActiveNodeAndUpdate = async (nodeId: string) => {
+    console.log('DEBUG: Switching from', activeNode, 'to', nodeId);
+
+    // Generate summary for current area before switching
+    if (activeNode && activeNode !== nodeId) {
+      await generateCurrentAreaSummary(activeNode);
+    }
+
     setActiveNode(nodeId);
     saveUnlockProgress(); // Save progress whenever active node changes
   };
@@ -891,28 +970,57 @@ Summary:`;
 
   const generateCampaignContext = () => {
     let context = '\n\n**CAMPAIGN HISTORY - WHAT HAS HAPPENED SO FAR:**\n';
-    
-    // Load area summaries from localStorage for clean context
+
+    console.log('DEBUG: Generating campaign context');
+
+    // Load area summaries PRIMARILY from localStorage for most reliable data
+    let currentSummaries: {[key: string]: string} = {};
     try {
       const savedSummaries = localStorage.getItem('areaSummaries');
       if (savedSummaries) {
-        const areaSummaries = JSON.parse(savedSummaries);
-        
-        // Add summaries in logical order
-        const areaOrder = ['missionBriefing', 'medicalBay', 'armory', 'captainsQuarters', 'bridge'];
-        
-        areaOrder.forEach(areaKey => {
-          if (areaSummaries[areaKey]) {
-            const areaName = areaKey.charAt(0).toUpperCase() + areaKey.slice(1).replace(/([A-Z])/g, ' $1');
-            context += `\n**${areaName}:** ${areaSummaries[areaKey]}\n`;
-          }
-        });
+        currentSummaries = JSON.parse(savedSummaries);
+        console.log('DEBUG: Loaded summaries from localStorage:', currentSummaries);
+      } else {
+        // Fallback to React state if no localStorage data
+        currentSummaries = areaSummaries;
+        console.log('DEBUG: Using React state summaries as fallback:', currentSummaries);
       }
     } catch (error) {
-      console.error('Failed to load area summaries for context:', error);
+      console.error('Failed to load summaries from localStorage:', error);
+      // Fallback to React state on error
+      currentSummaries = areaSummaries;
     }
-    
-    console.log('Generated Campaign Context:', context);
+
+    console.log('DEBUG: Final summaries for context generation:', currentSummaries);
+
+    // Add summaries in logical order
+    const areaOrder = [
+      { key: 'missionBriefing', name: 'Mission Briefing' },
+      { key: 'medicalBay', name: 'Medical Bay' },
+      { key: 'armory', name: 'Armory' },
+      { key: 'captainsQuarters', name: 'Captain\'s Quarters' },
+      { key: 'bridge', name: 'Bridge' }
+    ];
+
+    let hasSummaries = false;
+    areaOrder.forEach(area => {
+      if (currentSummaries[area.key]) {
+        context += `\n**${area.name}:** ${currentSummaries[area.key]}\n`;
+        hasSummaries = true;
+        console.log('DEBUG: Added', area.name, 'summary to context');
+      } else {
+        console.log('DEBUG: No summary found for', area.name);
+      }
+    });
+
+    if (!hasSummaries) {
+      context += '\nThis is your first area - no previous exploration history available yet.\n';
+      console.log('DEBUG: No summaries found for context');
+    } else {
+      console.log('DEBUG: Campaign context generated with', Object.keys(currentSummaries).length, 'summaries');
+    }
+
+    console.log('DEBUG: Final Generated Campaign Context:', context);
     return context;
   };
 
@@ -1340,9 +1448,16 @@ Summary:`;
 
   // Helper function to generate unified campaign system prompt
   const generateCampaignSystemPrompt = (hero: Hero, area: string = 'general') => {
+    console.log('DEBUG: generateCampaignSystemPrompt - hero has system_prompt:', !!hero.system_prompt);
+
     if (hero.system_prompt) {
-      // Add campaign-specific DM rules to the hero's existing system prompt
+      // Add campaign context to the hero's existing system prompt
+      const campaignContext = generateCampaignContext();
+      console.log('DEBUG: Adding campaign context to existing system_prompt for', hero.name);
+
       return `${hero.system_prompt}
+
+${campaignContext}
 
 CRITICAL CAMPAIGN RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
 - You are ${hero.name}, a PLAYER CHARACTER in this campaign
@@ -1354,12 +1469,15 @@ CRITICAL CAMPAIGN RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
 RESPONSE REQUIREMENTS:
 - Speak ONLY as ${hero.name}
 - Keep responses to 1-2 sentences
-- Stay in character based on your background and personality`;
+- Stay in character based on your background and personality
+- Remember and reference previous events from the campaign history above`;
     }
 
     const missionBriefing = generateMissionBriefing();
     const campaignContext = generateCampaignContext();
-    
+
+    console.log('DEBUG: generateCampaignSystemPrompt - campaignContext:', campaignContext);
+
     const areaContexts = {
       'missionBriefing': 'in the ship\'s briefing area, discussing the situation and planning your escape from this mysterious space vessel',
       'medicalBay': 'in the spaceship\'s medical bay, investigating the medical facility and equipment aboard this research vessel',
@@ -1367,8 +1485,8 @@ RESPONSE REQUIREMENTS:
       'captainsQuarters': 'in the spaceship\'s captain\'s quarters, searching for clues about what happened to the crew of this vessel',
       'bridge': 'on the spaceship\'s bridge, facing the final confrontation with whatever threat has taken control of this vessel'
     };
-    
-    return `You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}. 
+
+    const systemPrompt = `You are ${hero.name}, a ${hero.race} ${hero.class}${hero.alignment ? ` (${hero.alignment})` : ''}.
 
 BACKGROUND: ${hero.backstory || 'You are an experienced adventurer.'}
 PERSONALITY: ${hero.personality_traits ? hero.personality_traits.join(', ') : 'You are brave and determined.'} ${hero.description || ''}
@@ -1379,58 +1497,24 @@ CURRENT OBJECTIVE: Investigate the ship systematically, gather information, find
 
 CURRENT SITUATION: You are ${areaContexts[area as keyof typeof areaContexts] || 'in this area of the ship'}. Work with your team to investigate and survive.
 
-${(() => {
-  // Get latest summaries from localStorage to ensure we have the most current data
-  let currentSummaries = areaSummaries;
-  try {
-    const savedSummaries = localStorage.getItem('areaSummaries');
-    if (savedSummaries) {
-      currentSummaries = JSON.parse(savedSummaries);
-    }
-  } catch (error) {
-    console.error('Failed to load summaries from localStorage:', error);
-  }
-  
-  // Add all accumulated area summaries for context
-  const summaries = Object.entries(currentSummaries)
-    .filter(([areaKey, _]) => areaKey !== area) // Don't include current area summary
-    .map(([areaKey, summary]) => `\n\n${areaKey.toUpperCase().replace(/([A-Z])/g, ' $1').trim()} SUMMARY: ${summary}`)
-    .join('');
-  
-  return summaries ? `\n\nPREVIOUS AREA EXPLORATION:${summaries}` : '';
-})()}
+${campaignContext}
 
-CRITICAL RULES - YOU ARE A PLAYER CHARACTER, NOT THE DM:
+CRITICAL CAMPAIGN RULES - YOU ARE A PLAYER CHARACTER:
 - You are ${hero.name}, a PLAYER CHARACTER in this campaign
 - You CANNOT act as the Dungeon Master, narrator, or game master
-- You CANNOT present options to other players
-- You CANNOT describe what the player "can" do
-- You CANNOT ask "What would you like to do?" or similar DM questions
+- You CANNOT present options to other players or ask "What would you like to do?"
 - You CANNOT list "Current Options:" or suggest actions to other players
-
-WHAT YOU CAN DO AS ${hero.name}:
-- Describe what ${hero.name} is doing or saying
-- React to situations based on your character's personality
-- Propose your own actions ("I search the room", "I listen at the door")
-- Interact with other party members in character
-- Make decisions based on your character's background and skills
-
-WHEN ASKED WHAT YOU WANT TO DO, HERE ARE YOUR OPTIONS: Common Actions
-Attack - Make one weapon or spell attack related to your character's abilities
-Cast a Spell - Most spells take an action related to your character's abilities
-Dash - Move again (double your movement)
-Dodge - Attackers have disadvantage until your next turn
-Help - Give an ally advantage on their next check
-Hide - Make a Stealth check
-Ready - Prepare an action for a specific trigger
-Search - Look for something specific
+- You CANNOT describe what the player "can" do
 
 RESPONSE REQUIREMENTS:
-- You are ONLY ${hero.name} - speak only as this character
-- Do NOT write dialogue for other characters
-- Do NOT act as narrator or DM
-- Do NOT call for dice rolls
-- Respond with 2-3 sentences of what ${hero.name} would say or do`;
+- Speak ONLY as ${hero.name}
+- Keep responses to 1-2 sentences
+- Stay in character based on your background and personality
+- Remember and reference previous events from the campaign history above`;
+
+    console.log('DEBUG: Final system prompt for', hero.name, ':', systemPrompt);
+
+    return systemPrompt;
   };
 
   const handleAreaHeroResponse = async (hero: Hero, area: string) => {
@@ -1497,7 +1581,9 @@ RESPONSE REQUIREMENTS:
       // SYSTEM PROMPT #1: CAMPAIGN PROMPT
       // Used for: All campaign area responses AND turn-based party dialogue
       // Context: Full campaign context with detailed rules, area-specific information, and turn-based dialogue support
+      console.log('DEBUG: About to call generateCampaignSystemPrompt for', hero.name, 'in area', area);
       const fullSystemPrompt = generateCampaignSystemPrompt(hero, area);
+      console.log('DEBUG: generateCampaignSystemPrompt returned. Length:', fullSystemPrompt.length);
 
       // Only include current area messages - NO CAMPAIGN HISTORY
       const allMessages = [
