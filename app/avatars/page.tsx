@@ -18,6 +18,7 @@ export default function AvatarsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
   const [showCustomPrompt, setShowCustomPrompt] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
 
   useEffect(() => {
     loadAvatarsFromStorage();
@@ -304,11 +305,14 @@ export default function AvatarsPage() {
                 key={avatar.id}
                 className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
               >
-                <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200">
+                <div
+                  className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200 cursor-pointer hover:border-blue-400 transition-colors"
+                  onClick={() => setSelectedAvatar(avatar)}
+                >
                   <img
                     src={avatar.image_url}
                     alt={avatar.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform"
                     onLoad={() => console.log('Image loaded successfully:', avatar.image_url)}
                     onError={(e) => {
                       console.error('Image failed to load:', avatar.image_url);
@@ -347,6 +351,85 @@ export default function AvatarsPage() {
           </div>
         )}
       </div>
+
+      {/* Avatar Modal */}
+      {selectedAvatar && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setSelectedAvatar(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">Avatar Details</h3>
+                <button
+                  onClick={() => setSelectedAvatar(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Large Avatar */}
+                <div className="flex-shrink-0">
+                  <div className="w-64 h-64 rounded-full overflow-hidden border-4 border-gray-200">
+                    <img
+                      src={selectedAvatar.image_url}
+                      alt={selectedAvatar.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Avatar Info */}
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Prompt</h4>
+                    <p className="text-gray-900">{selectedAvatar.prompt}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Generated</h4>
+                    <p className="text-gray-600">
+                      {new Date(selectedAvatar.generated_at).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Category</h4>
+                    <p className="text-gray-600 capitalize">{selectedAvatar.category}</p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => downloadAvatar(selectedAvatar)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Download
+                    </button>
+                    <button
+                      onClick={() => {
+                        deleteAvatar(selectedAvatar.id);
+                        setSelectedAvatar(null);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
