@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CreateHeroInput } from '../lib/supabase';
 import { uploadAvatarImage, UploadResult } from '../lib/uploadAvatar';
 import { useEcho } from '../echo';
+import AvatarGenerator from './AvatarGenerator';
 
 interface HeroFormProps {
   onSubmit: (heroData: CreateHeroInput) => void;
@@ -568,8 +569,16 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
                 placeholder="https://example.com/avatar.jpg"
               />
             </div>
+
           </div>
         </div>
+
+        {/* AI Avatar Generator */}
+        <AvatarGenerator
+          onAvatarSelect={handleUrlChange}
+          characterName={formData.name}
+          characterDescription={formData.backstory}
+        />
 
         {/* Form Actions */}
         <div className="flex gap-3 pt-4 border-t">
