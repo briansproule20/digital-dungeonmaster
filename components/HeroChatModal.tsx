@@ -71,15 +71,21 @@ export default function HeroChatModal({ isOpen, onClose, hero }: HeroChatModalPr
     setInput("");
     
     try {
+      const payload = {
+        messages: [...messages, userMessage],
+        heroSystemPrompt: hero.system_prompt,
+        heroName: hero.name,
+        heroDescription: hero.description,
+        heroClass: hero.class,
+        heroRace: hero.race
+      };
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-          heroSystemPrompt: hero.system_prompt
-        })
+        body: JSON.stringify(payload)
       });
-      
+
       if (response.ok) {
         setIsTyping(false);
         const data = await response.text();

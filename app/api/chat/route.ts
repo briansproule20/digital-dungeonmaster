@@ -3,9 +3,18 @@ import { generateText } from "ai";
 
 export async function POST(req: Request) {
     try {
-        const { messages, heroSystemPrompt } = await req.json();
-        
-        const systemPrompt = heroSystemPrompt || "You are an experienced Dungeonmaster for tabletop RPGs like D&D. Help players with campaigns, characters, rules, and creative storytelling. Be enthusiastic and knowledgeable about fantasy adventures.";
+        const { messages, heroSystemPrompt, heroName, heroDescription, heroClass, heroRace } = await req.json();
+
+        const systemPrompt = heroSystemPrompt
+            ? `You are ${heroName || 'a D&D character'}${heroClass ? `, a ${heroClass}` : ''}${heroRace ? ` ${heroRace}` : ''}. Stay in character at all times. Never break roleplay or respond as an AI assistant.
+
+YOUR NAME IS: ${heroName || 'Unknown'}
+${heroDescription ? `DESCRIPTION: ${heroDescription}` : ''}
+
+CHARACTER DETAILS: ${heroSystemPrompt}
+
+You must ALWAYS identify yourself as ${heroName || 'this character'}, never make up a different name. Always respond as this specific character would, using their personality, background, and voice.`
+            : "You are an experienced Dungeonmaster for tabletop RPGs like D&D. Help players with campaigns, characters, rules, and creative storytelling. Be enthusiastic and knowledgeable about fantasy adventures.";
 
         const allMessages = [
             { role: "system", content: systemPrompt },
@@ -16,7 +25,7 @@ export async function POST(req: Request) {
         ];
 
         const result = await generateText({
-            model: openai("gpt-4o"), 
+            model: openai("gpt-4o"),
             messages: allMessages,
         });
 
