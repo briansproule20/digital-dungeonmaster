@@ -1282,15 +1282,22 @@ Summary:`;
   }, []);
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
-    console.log('Node clicked:', node.id, 'unlocked:', unlockedModules.has(node.id));
-    
+    console.log('Node clicked:', node.id, 'unlocked:', unlockedModules.has(node.id), 'node.data.unlocked:', node.data.unlocked);
+
     // Ignore clicks on instruction node - it's just informational
     if (node.id === 'instruction-text') {
       return;
     }
-    
-    // Check if module is unlocked
-    if (!unlockedModules.has(node.id)) {
+
+    // Check if module is unlocked AND not explicitly disabled (for path-locked nodes)
+    if (!unlockedModules.has(node.id) || node.data.unlocked === false) {
+      // If it's a path-locked node, show a different message
+      if (node.data.unlocked === false && (node.data.label as string).includes('Path Locked')) {
+        console.log('Path locked node clicked:', node.data.label);
+        alert('This path has been permanently locked due to your previous choice. You cannot access this area in this playthrough.');
+        return;
+      }
+
       // Allow unlocking by clicking - show confirmation modal
       console.log('Setting locked module:', node.data.label, 'node ID:', node.id);
       setLockedModuleName((node.data.label as string).replace('🔒 ', ''));
