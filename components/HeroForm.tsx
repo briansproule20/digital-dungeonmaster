@@ -16,8 +16,8 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
   const echoClient = useEcho();
   const [formData, setFormData] = useState<CreateHeroInput>({
     name: initialData?.name || '',
-    description: initialData?.description || '',
-    system_prompt: initialData?.system_prompt || '',
+    description: initialData?.description || '', // Will be auto-generated if empty
+    system_prompt: initialData?.system_prompt || '', // Will be auto-generated if empty
     class: initialData?.class || '',
     race: initialData?.race || '',
     level: initialData?.level || 1,
@@ -43,9 +43,47 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
     initialData?.avatar_url || null
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Auto-generate description and system_prompt if they're missing
+    let finalFormData = { ...formData };
+
+    if (!formData.description || !formData.system_prompt) {
+      try {
+        const response = await fetch('/api/generate-hero-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ heroData: formData })
+        });
+
+        if (response.ok) {
+          const generated = await response.json();
+          finalFormData = {
+            ...formData,
+            description: generated.description,
+            system_prompt: generated.system_prompt
+          };
+        } else {
+          // Fallback if generation fails
+          finalFormData = {
+            ...formData,
+            description: formData.description || `${formData.name} is a ${formData.race || ''} ${formData.class || 'character'}.`,
+            system_prompt: formData.system_prompt || `You are ${formData.name}. ${formData.backstory || 'You are a D&D character.'} Stay in character at all times.`
+          };
+        }
+      } catch (error) {
+        console.error('Failed to generate character details:', error);
+        // Use fallback data
+        finalFormData = {
+          ...formData,
+          description: formData.description || `${formData.name} is a ${formData.race || ''} ${formData.class || 'character'}.`,
+          system_prompt: formData.system_prompt || `You are ${formData.name}. ${formData.backstory || 'You are a D&D character.'} Stay in character at all times.`
+        };
+      }
+    }
+
+    onSubmit(finalFormData);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -373,99 +411,12 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
           </div>
         </div>
 
-        {/* Description */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Description *
-            </label>
-            <button
-              type="button"
-              onClick={generateDescription}
-              disabled={isGeneratingDescription || !formData.name}
-              className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isGeneratingDescription ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-700" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Generate with AI
-                </>
-              )}
-            </button>
-          </div>
-          <textarea
-            required
-            rows={3}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            placeholder="Brief description of your hero"
-          />
-          {!formData.name && (
-            <p className="text-xs text-gray-500 mt-1">
-              Enter a character name to enable AI description generation
-            </p>
-          )}
-        </div>
-
-        {/* System Prompt */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Character AI Prompt *
-            </label>
-            <button
-              type="button"
-              onClick={generateSystemPrompt}
-              disabled={isGeneratingSystemPrompt || !formData.name}
-              className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isGeneratingSystemPrompt ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-purple-700" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Generate with AI
-                </>
-              )}
-            </button>
-          </div>
-          <textarea
-            required
-            rows={4}
-            value={formData.system_prompt}
-            onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            placeholder="Define how this character should respond and behave in conversations..."
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            This prompt will determine how the AI responds when chatting as this character. Must begin with "You are [Character Name],"
-          </p>
-        </div>
 
         {/* Backstory */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm font-medium text-gray-700">
-              Backstory
+              Backstory *
             </label>
             <button
               type="button"
@@ -492,6 +443,7 @@ export default function HeroForm({ onSubmit, onCancel, isLoading = false, initia
             </button>
           </div>
           <textarea
+            required
             rows={4}
             value={formData.backstory}
             onChange={(e) => setFormData({ ...formData, backstory: e.target.value })}
