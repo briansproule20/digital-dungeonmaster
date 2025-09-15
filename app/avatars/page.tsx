@@ -322,8 +322,8 @@ export default function AvatarsPage() {
                     }}
                   />
                 </div>
-                <div className="mb-3">
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-3">{avatar.prompt}</p>
+                <div className="mb-3 h-12">
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-3 overflow-hidden">{avatar.prompt}</p>
                 </div>
                 <div className="flex justify-between items-center mb-3">
                   <button
