@@ -11,7 +11,28 @@ interface Message {
 
 export default function Chat() {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: 'assistant',
+      content: `**Welcome to Digital Dungeonmaster!**
+
+You are the **Dungeonmaster** here! I'm your AI assistant to help you manage your campaigns with AI heroes.
+
+**How our system works:**
+- **You're the DM** - You control the story, make final decisions, and guide the adventure
+- **AI heroes** - Your party members are AI characters with unique personalities
+- **Your responsibilities:** Manage dice rolls, track HP in battles, and decide when checks are needed
+- **My role:** Help you be an awesome DM and work with your AI party
+
+**Get started:**
+- Ask me about DM tips for AI characters
+- Get help creating campaign scenarios
+- Learn how to manage your AI party effectively
+
+What would you like to know about being a DM for AI heroes?`,
+      id: 'welcome-message'
+    }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -57,7 +78,7 @@ export default function Chat() {
     setInput("");
     
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/home-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -128,8 +149,7 @@ export default function Chat() {
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
-              <div className="text-lg font-medium mb-2">Welcome, Adventurer!</div>
-              <p className="text-sm">Start a conversation with your AI Dungeonmaster. Ask about campaigns, characters, or game rules.</p>
+              <div className="text-lg font-medium mb-2">Loading...</div>
             </div>
           </div>
         ) : (
