@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 
 export default function Docs() {
   const [activeSection, setActiveSection] = useState('what-is-dnd');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const sections = [
     { id: 'what-is-dnd', title: 'What is D&D?' },
@@ -19,6 +20,7 @@ export default function Docs() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    setIsMobileMenuOpen(false); // Close mobile menu after navigation
   };
 
   React.useEffect(() => {
@@ -47,37 +49,81 @@ export default function Docs() {
   }, [sections]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 flex gap-8">
-        {/* Sidebar */}
-        <aside className="w-64 flex-shrink-0">
-          <div className="sticky top-8 bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Contents</h3>
-            <nav className="space-y-2">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id)}
-                  className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                    activeSection === section.id
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  {section.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <div className="max-w-6xl mx-auto px-4">
 
-        {/* Main Content */}
-        <main className="flex-1">
-          <article className="bg-white rounded-lg shadow-sm border p-8 prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black prose-strong:text-black">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Beginner's Guide</h1>
-          <p className="text-xl text-gray-600 italic mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
+        {/* Mobile Navigation Button */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="w-full bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between text-left"
+          >
+            <div>
+              <h3 className="font-semibold text-gray-900">Contents</h3>
+              <p className="text-sm text-gray-500">Jump to section</p>
+            </div>
+            <svg
+              className={`w-5 h-5 text-gray-500 transition-transform ${isMobileMenuOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          <h2 id="what-is-dnd" className="text-2xl font-bold text-gray-900 mt-8 mb-4">What is D&D?</h2>
+          {/* Mobile Contents Menu */}
+          {isMobileMenuOpen && (
+            <div className="mt-2 bg-white rounded-lg shadow-sm border p-4">
+              <nav className="space-y-2">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                      activeSection === section.id
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {section.title}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-8">
+          {/* Desktop Sidebar */}
+          <aside className="hidden md:block w-64 flex-shrink-0">
+            <div className="sticky top-8 bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Contents</h3>
+              <nav className="space-y-2">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                      activeSection === section.id
+                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {section.title}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1">
+            <article className="bg-white rounded-lg shadow-sm border p-4 md:p-8 prose prose-lg max-w-none prose-headings:text-black prose-p:text-black prose-li:text-black prose-strong:text-black">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">Beginner's Guide</h1>
+            <p className="text-lg md:text-xl text-gray-600 italic mb-6 md:mb-8">A comprehensive introduction to the world's greatest roleplaying game</p>
+
+          <h2 id="what-is-dnd" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">What is D&D?</h2>
           <p className="text-gray-700 leading-relaxed mb-6">
             Dungeons & Dragons is a tabletop roleplaying game where you and your friends create characters and embark on adventures in a fantasy world. One player acts as the <strong>Dungeon Master (DM)</strong> who describes the world and controls the story, while the other players control <strong>Player Characters (PCs)</strong> who are the heroes of the tale.
           </p>
@@ -85,7 +131,7 @@ export default function Docs() {
             Think of it like collaborative storytelling with dice to add excitement and uncertainty!
           </p>
 
-          <h2 id="campaign-best-practices" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Campaign Best Practices</h2>
+          <h2 id="campaign-best-practices" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">Campaign Best Practices</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
             Our game draws inspiration from <a href="https://www.youtube.com/@DougDoug" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">DougDoug's YouTube series</a> where he plays D&D with AI characters. His videos showcase the perfect blend of chaos and creativity that makes AI-driven campaigns so entertaining. We highly recommend checking out his channel for great examples of how AI characters can create hilarious adventures.
           </p>
@@ -94,7 +140,7 @@ export default function Docs() {
             While we provide story frameworks to get your campaigns started, you're the DM — it's your role to guide the AI characters through encounters, plot twists, and memorable moments. The more detailed and immersive you make the world, the better your AI players will respond and engage with the story.
           </p>
 
-          <h2 id="core-concepts" className="text-2xl font-bold text-gray-900 mt-8 mb-4">Core Concepts</h2>
+          <h2 id="core-concepts" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">Core Concepts</h2>
           
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">The Golden Rule</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
@@ -111,13 +157,13 @@ export default function Docs() {
           </ol>
 
 
-          <h2 id="dnd-classes" className="text-2xl font-bold text-gray-900 mt-8 mb-4">D&D Classes</h2>
+          <h2 id="dnd-classes" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">D&D Classes</h2>
           
           <p className="text-gray-700 leading-relaxed mb-6">
             Your class determines what your character can do. Each class has unique abilities, spells, and play styles. Here are the core classes from the Player's Handbook:
           </p>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
             <div className="space-y-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-semibold text-red-800 mb-2">Fighter</h4>
@@ -202,7 +248,7 @@ export default function Docs() {
             <li><strong>Ranger:</strong> Good mix of combat and utility</li>
           </ul>
 
-          <h2 id="dice-system" className="text-2xl font-bold text-gray-900 mt-8 mb-4">The d20 System</h2>
+          <h2 id="dice-system" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">The d20 System</h2>
 
           <p className="text-gray-700 leading-relaxed mb-6">
             In our game, everything revolves around the <strong>20-sided die (d20)</strong>. This single die determines the outcome of all your actions, from sneaking past guards to casting spells to swinging swords.
@@ -227,7 +273,7 @@ export default function Docs() {
           </ul>
 
 
-          <h2 id="ai-turns" className="text-2xl font-bold text-gray-900 mt-8 mb-4">AI Turns</h2>
+          <h2 id="ai-turns" className="text-xl md:text-2xl font-bold text-gray-900 mt-6 md:mt-8 mb-3 md:mb-4">AI Turns</h2>
 
           <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">What AI Characters Can Do</h3>
           <p className="text-gray-700 leading-relaxed mb-4">On an AI character's turn, they can:</p>
@@ -271,6 +317,7 @@ export default function Docs() {
           </div>
         </article>
         </main>
+        </div>
       </div>
     </div>
   );
