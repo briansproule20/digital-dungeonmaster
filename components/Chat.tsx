@@ -78,7 +78,7 @@ What would you like to know about being a DM for AI heroes?`,
     setInput("");
     
     try {
-      const response = await fetch('/api/home-chat', {
+      const response = await fetch('/api/homepage-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -143,9 +143,9 @@ What would you like to know about being a DM for AI heroes?`,
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm h-full flex flex-col">
+    <div className="w-full max-w-4xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col max-h-[600px]">
       {/* Messages Container */}
-      <div className="chat-container p-4 space-y-4 min-h-[400px] flex-1 overflow-y-auto">
+      <div className="chat-container p-4 space-y-4 flex-1 overflow-y-auto max-h-[500px]">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
