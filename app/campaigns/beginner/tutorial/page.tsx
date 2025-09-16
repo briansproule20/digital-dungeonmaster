@@ -452,54 +452,97 @@ Summary:`;
       return newSet;
     });
 
-    // Generate summaries from all completed areas when unlocking new areas
-    if (moduleIds.includes('node2') || moduleIds.includes('node3') || moduleIds.includes('node4') || moduleIds.includes('node5')) {
-      const newSummaries = { ...areaSummaries };
-      const newCompletedAreas = new Set(Array.from(completedAreas));
+    // Generate summaries only for specific area completions based on path progression
+    const newSummaries = { ...areaSummaries };
+    const newCompletedAreas = new Set(Array.from(completedAreas));
+    let summariesGenerated = false;
 
-      console.log('DEBUG: Starting summary generation process');
+    console.log('DEBUG: Starting summary generation process');
 
-      // Generate summary for mission briefing if not already completed
-      if (!missionBriefingCompleted && briefingMessages.length > 0) {
-        console.log('DEBUG: Generating Mission Briefing summary with', briefingMessages.length, 'messages');
-        const briefingSummary = await generateAreaSummary('Mission Briefing', briefingMessages);
-        console.log('DEBUG: About to assign summary to newSummaries. Current newSummaries:', newSummaries);
-        newSummaries['missionBriefing'] = briefingSummary;
-        console.log('DEBUG: After assignment. newSummaries:', newSummaries);
-        setMissionBriefingSummary(briefingSummary);
-        setMissionBriefingCompleted(true);
-        newCompletedAreas.add('missionBriefing');
-        console.log('DEBUG: Mission Briefing summary generated:', briefingSummary);
-      }
+    // Generate summary for mission briefing when moving to Medical Bay OR Armory (node2 or node3)
+    if ((moduleIds.includes('node2') || moduleIds.includes('node3')) && !missionBriefingCompleted && briefingMessages.length > 0) {
+      console.log('DEBUG: Generating Mission Briefing summary with', briefingMessages.length, 'messages');
+      const briefingSummary = await generateAreaSummary('Mission Briefing', briefingMessages);
+      console.log('DEBUG: About to assign summary to newSummaries. Current newSummaries:', newSummaries);
+      newSummaries['missionBriefing'] = briefingSummary;
+      console.log('DEBUG: After assignment. newSummaries:', newSummaries);
+      setMissionBriefingSummary(briefingSummary);
+      setMissionBriefingCompleted(true);
+      newCompletedAreas.add('missionBriefing');
+      console.log('DEBUG: Mission Briefing summary generated:', briefingSummary);
+      summariesGenerated = true;
+    }
 
-      // Generate summaries for other completed areas
-      if (medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
-        console.log('DEBUG: Generating Medical Bay summary with', medicalBayMessages.length, 'messages');
-        const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
-        newSummaries['medicalBay'] = medicalSummary;
-        newCompletedAreas.add('medicalBay');
-        console.log('DEBUG: Medical Bay summary generated:', medicalSummary);
-      }
+    // When Medical Bay (node2) is chosen, lock Armory if it has messages
+    if (moduleIds.includes('node2') && armoryMessages.length > 0 && !newSummaries['armory']) {
+      console.log('DEBUG: Medical Bay chosen - locking Armory with', armoryMessages.length, 'messages');
+      const armorySummary = await generateAreaSummary('Armory', armoryMessages);
+      newSummaries['armory'] = armorySummary;
+      newCompletedAreas.add('armory');
+      console.log('DEBUG: Armory summary generated and locked:', armorySummary);
+      summariesGenerated = true;
+    }
 
-      if (armoryMessages.length > 0 && !newSummaries['armory']) {
-        console.log('DEBUG: Generating Armory summary with', armoryMessages.length, 'messages');
-        const armorySummary = await generateAreaSummary('Armory', armoryMessages);
-        newSummaries['armory'] = armorySummary;
-        newCompletedAreas.add('armory');
-        console.log('DEBUG: Armory summary generated:', armorySummary);
-      }
+    // When Armory (node3) is chosen, lock Medical Bay if it has messages
+    if (moduleIds.includes('node3') && medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
+      console.log('DEBUG: Armory chosen - locking Medical Bay with', medicalBayMessages.length, 'messages');
+      const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
+      newSummaries['medicalBay'] = medicalSummary;
+      newCompletedAreas.add('medicalBay');
+      console.log('DEBUG: Medical Bay summary generated and locked:', medicalSummary);
+      summariesGenerated = true;
+    }
 
-      if (captainsQuartersMessages.length > 0 && !newSummaries['captainsQuarters']) {
-        console.log('DEBUG: Generating Captain\'s Quarters summary with', captainsQuartersMessages.length, 'messages');
-        const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
-        newSummaries['captainsQuarters'] = quartersSummary;
-        newCompletedAreas.add('captainsQuarters');
-        console.log('DEBUG: Captain\'s Quarters summary generated:', quartersSummary);
-      }
+    // Generate Medical Bay summary when moving to Captain's Quarters (node4) - if not already locked
+    if (moduleIds.includes('node4') && medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
+      console.log('DEBUG: Generating Medical Bay summary with', medicalBayMessages.length, 'messages');
+      const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
+      newSummaries['medicalBay'] = medicalSummary;
+      newCompletedAreas.add('medicalBay');
+      console.log('DEBUG: Medical Bay summary generated:', medicalSummary);
+      summariesGenerated = true;
+    }
+
+    // Generate Armory summary when moving to Captain's Quarters (node4) - if not already locked
+    if (moduleIds.includes('node4') && armoryMessages.length > 0 && !newSummaries['armory']) {
+      console.log('DEBUG: Generating Armory summary with', armoryMessages.length, 'messages');
+      const armorySummary = await generateAreaSummary('Armory', armoryMessages);
+      newSummaries['armory'] = armorySummary;
+      newCompletedAreas.add('armory');
+      console.log('DEBUG: Armory summary generated:', armorySummary);
+      summariesGenerated = true;
+    }
+
+    // Generate Captain's Quarters summary only when moving to Bridge (node5)
+    if (moduleIds.includes('node5') && captainsQuartersMessages.length > 0 && !newSummaries['captainsQuarters']) {
+      console.log('DEBUG: Generating Captain\'s Quarters summary with', captainsQuartersMessages.length, 'messages');
+      const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
+      newSummaries['captainsQuarters'] = quartersSummary;
+      newCompletedAreas.add('captainsQuarters');
+      console.log('DEBUG: Captain\'s Quarters summary generated:', quartersSummary);
+      summariesGenerated = true;
+    }
+
+    // Only update state if summaries were actually generated
+    if (summariesGenerated) {
 
       // Update state with new summaries and completed areas
       setAreaSummaries(newSummaries);
       setCompletedAreas(newCompletedAreas);
+
+      // Close chat areas that have been completed
+      if (newCompletedAreas.has('medicalBay')) {
+        setMedicalBayOpen(false);
+      }
+      if (newCompletedAreas.has('armory')) {
+        setArmoryOpen(false);
+      }
+      if (newCompletedAreas.has('captainsQuarters')) {
+        setCaptainsQuartersOpen(false);
+      }
+      if (newCompletedAreas.has('bridge')) {
+        setBridgeOpen(false);
+      }
 
       // Save all summaries to localStorage
       localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
@@ -1289,11 +1332,18 @@ Summary:`;
       return;
     }
 
-    // Check if module is unlocked AND not explicitly disabled (for path-locked nodes)
-    if (!unlockedModules.has(node.id) || node.data.unlocked === false) {
-      // If it's a path-locked node, show a different message
-      if (node.data.unlocked === false && (node.data.label as string).includes('Path Locked')) {
-        console.log('Path locked node clicked:', node.data.label);
+    // Check if it's a path-locked node first
+    if (node.data.unlocked === false && (node.data.label as string).includes('Path Locked')) {
+      console.log('Path locked node clicked:', node.data.label);
+      alert('This path has been permanently locked due to your previous choice. You cannot access this area in this playthrough.');
+      return;
+    }
+
+    // Check if module is not unlocked yet - show unlock modal
+    if (!unlockedModules.has(node.id)) {
+      // Extra check: Don't allow unlocking Medical Bay if Armory is unlocked, or vice versa
+      if ((node.id === 'node2' && unlockedModules.has('node3')) ||
+          (node.id === 'node3' && unlockedModules.has('node2'))) {
         alert('This path has been permanently locked due to your previous choice. You cannot access this area in this playthrough.');
         return;
       }
