@@ -67,7 +67,7 @@ function CampaignsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 pb-32">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -147,7 +147,7 @@ function CampaignsContent() {
 
         {/* Campaign Difficulty Buttons */}
         <div className="flex items-center justify-center mt-20">
-          <div className="flex items-center gap-16">
+          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
             {/* Beginner - Green Circle */}
             <button 
               onClick={() => router.push('/campaigns/beginner')}
@@ -178,7 +178,7 @@ function CampaignsContent() {
             </div>
             
             {/* Advanced - Black Diamond - LOCKED */}
-            <div className="group relative w-48 h-48 bg-gray-500 cursor-not-allowed shadow-lg opacity-60 transform rotate-45">
+            <div className="group relative w-48 h-48 bg-gray-500 cursor-not-allowed shadow-lg opacity-60 transform rotate-45 mt-8 md:mt-0">
               <div className="absolute inset-0 flex items-center justify-center transform -rotate-45">
                 <div className="text-center">
                   <div className="text-white text-2xl font-bold mb-2">Advanced</div>
