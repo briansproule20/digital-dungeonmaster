@@ -2528,8 +2528,8 @@ RESPONSE REQUIREMENTS:
                   type="text"
                   value={medicalBayInput}
                   onChange={(e) => setMedicalBayInput(e.target.value)}
-                  placeholder="Type your message to the team..."
-                  disabled={medicalBayTyping}
+                  placeholder={completedAreas.has('medicalBay') ? "Medical Bay completed - this area is locked" : "Type your message to the team..."}
+                  disabled={medicalBayTyping || completedAreas.has('medicalBay')}
                   style={{
                     flex: 1,
                     padding: '12px 16px',
@@ -2543,16 +2543,16 @@ RESPONSE REQUIREMENTS:
                 />
                 <button
                   type="submit"
-                  disabled={!medicalBayInput.trim() || medicalBayTyping}
+                  disabled={!medicalBayInput.trim() || medicalBayTyping || completedAreas.has('medicalBay')}
                   style={{
                     padding: '12px 20px',
-                    backgroundColor: (!medicalBayInput.trim() || medicalBayTyping) ? '#d1d5db' : '#3b82f6',
+                    backgroundColor: (!medicalBayInput.trim() || medicalBayTyping || completedAreas.has('medicalBay')) ? '#d1d5db' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: (!medicalBayInput.trim() || medicalBayTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!medicalBayInput.trim() || medicalBayTyping || completedAreas.has('medicalBay')) ? 'not-allowed' : 'pointer',
                     minWidth: '80px'
                   }}
                 >
@@ -2792,8 +2792,8 @@ RESPONSE REQUIREMENTS:
                   type="text"
                   value={armoryInput}
                   onChange={(e) => setArmoryInput(e.target.value)}
-                  placeholder="Type your message to the team..."
-                  disabled={armoryTyping}
+                  placeholder={completedAreas.has('armory') ? "Armory completed - this area is locked" : "Type your message to the team..."}
+                  disabled={armoryTyping || completedAreas.has('armory')}
                   style={{
                     flex: 1,
                     padding: '12px 16px',
@@ -2807,16 +2807,16 @@ RESPONSE REQUIREMENTS:
                 />
                 <button
                   type="submit"
-                  disabled={!armoryInput.trim() || armoryTyping}
+                  disabled={!armoryInput.trim() || armoryTyping || completedAreas.has('armory')}
                   style={{
                     padding: '12px 20px',
-                    backgroundColor: (!armoryInput.trim() || armoryTyping) ? '#d1d5db' : '#3b82f6',
+                    backgroundColor: (!armoryInput.trim() || armoryTyping || completedAreas.has('armory')) ? '#d1d5db' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: (!armoryInput.trim() || armoryTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!armoryInput.trim() || armoryTyping || completedAreas.has('armory')) ? 'not-allowed' : 'pointer',
                     minWidth: '80px'
                   }}
                 >
@@ -3056,8 +3056,8 @@ RESPONSE REQUIREMENTS:
                   type="text"
                   value={captainsQuartersInput}
                   onChange={(e) => setCaptainsQuartersInput(e.target.value)}
-                  placeholder="Type your message to the team..."
-                  disabled={captainsQuartersTyping}
+                  placeholder={completedAreas.has('captainsQuarters') ? "Captain's Quarters completed - this area is locked" : "Type your message to the team..."}
+                  disabled={captainsQuartersTyping || completedAreas.has('captainsQuarters')}
                   style={{
                     flex: 1,
                     padding: '12px 16px',
@@ -3071,16 +3071,16 @@ RESPONSE REQUIREMENTS:
                 />
                 <button
                   type="submit"
-                  disabled={!captainsQuartersInput.trim() || captainsQuartersTyping}
+                  disabled={!captainsQuartersInput.trim() || captainsQuartersTyping || completedAreas.has('captainsQuarters')}
                   style={{
                     padding: '12px 20px',
-                    backgroundColor: (!captainsQuartersInput.trim() || captainsQuartersTyping) ? '#d1d5db' : '#3b82f6',
+                    backgroundColor: (!captainsQuartersInput.trim() || captainsQuartersTyping || completedAreas.has('captainsQuarters')) ? '#d1d5db' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: (!captainsQuartersInput.trim() || captainsQuartersTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!captainsQuartersInput.trim() || captainsQuartersTyping || completedAreas.has('captainsQuarters')) ? 'not-allowed' : 'pointer',
                     minWidth: '80px'
                   }}
                 >
@@ -3320,8 +3320,8 @@ RESPONSE REQUIREMENTS:
                   type="text"
                   value={bridgeInput}
                   onChange={(e) => setBridgeInput(e.target.value)}
-                  placeholder="Type your message to the team..."
-                  disabled={bridgeTyping}
+                  placeholder={completedAreas.has('bridge') ? "Bridge completed - this area is locked" : "Type your message to the team..."}
+                  disabled={bridgeTyping || completedAreas.has('bridge')}
                   style={{
                     flex: 1,
                     padding: '12px 16px',
@@ -3335,16 +3335,16 @@ RESPONSE REQUIREMENTS:
                 />
                 <button
                   type="submit"
-                  disabled={!bridgeInput.trim() || bridgeTyping}
+                  disabled={!bridgeInput.trim() || bridgeTyping || completedAreas.has('bridge')}
                   style={{
                     padding: '12px 20px',
-                    backgroundColor: (!bridgeInput.trim() || bridgeTyping) ? '#d1d5db' : '#3b82f6',
+                    backgroundColor: (!bridgeInput.trim() || bridgeTyping || completedAreas.has('bridge')) ? '#d1d5db' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: (!bridgeInput.trim() || bridgeTyping) ? 'not-allowed' : 'pointer',
+                    cursor: (!bridgeInput.trim() || bridgeTyping || completedAreas.has('bridge')) ? 'not-allowed' : 'pointer',
                     minWidth: '80px'
                   }}
                 >
