@@ -442,6 +442,7 @@ Summary:`;
 
   // Function to unlock modules based on progression
   const unlockModules = async (moduleIds: string[]) => {
+    console.log('🚀 DEBUG: unlockModules CALLED with:', moduleIds);
     console.log('DEBUG: Unlocking modules:', moduleIds);
     console.log('DEBUG: Current areaSummaries:', areaSummaries);
     console.log('DEBUG: Current completedAreas:', Array.from(completedAreas));
@@ -458,68 +459,67 @@ Summary:`;
     let summariesGenerated = false;
 
     console.log('DEBUG: Starting summary generation process');
+    console.log('DEBUG: moduleIds:', moduleIds);
+    console.log('DEBUG: briefingMessages.length:', briefingMessages.length);
+    console.log('DEBUG: newSummaries:', newSummaries);
 
-    // Generate summary for mission briefing when moving to Medical Bay OR Armory (node2 or node3)
-    if ((moduleIds.includes('node2') || moduleIds.includes('node3')) && !missionBriefingCompleted && briefingMessages.length > 0) {
-      console.log('DEBUG: Generating Mission Briefing summary with', briefingMessages.length, 'messages');
+    // SIMPLE RULE: When any node is unlocked, immediately complete ALL PRIOR nodes
+
+    // When node2 or node3 unlocked -> complete Mission Briefing
+    if ((moduleIds.includes('node2') || moduleIds.includes('node3')) && briefingMessages.length > 0 && !newSummaries['missionBriefing']) {
+      console.log('DEBUG: Unlocking node2/3 - completing Mission Briefing');
       const briefingSummary = await generateAreaSummary('Mission Briefing', briefingMessages);
-      console.log('DEBUG: About to assign summary to newSummaries. Current newSummaries:', newSummaries);
       newSummaries['missionBriefing'] = briefingSummary;
-      console.log('DEBUG: After assignment. newSummaries:', newSummaries);
+      newCompletedAreas.add('missionBriefing');
       setMissionBriefingSummary(briefingSummary);
       setMissionBriefingCompleted(true);
-      newCompletedAreas.add('missionBriefing');
-      console.log('DEBUG: Mission Briefing summary generated:', briefingSummary);
       summariesGenerated = true;
+    } else {
+      console.log('DEBUG: NOT completing Mission Briefing because:', {
+        'includes node2/3': moduleIds.includes('node2') || moduleIds.includes('node3'),
+        'has messages': briefingMessages.length > 0,
+        'no existing summary': !newSummaries['missionBriefing']
+      });
     }
 
-    // When Medical Bay (node2) is chosen, lock Armory if it has messages
-    if (moduleIds.includes('node2') && armoryMessages.length > 0 && !newSummaries['armory']) {
-      console.log('DEBUG: Medical Bay chosen - locking Armory with', armoryMessages.length, 'messages');
-      const armorySummary = await generateAreaSummary('Armory', armoryMessages);
-      newSummaries['armory'] = armorySummary;
-      newCompletedAreas.add('armory');
-      console.log('DEBUG: Armory summary generated and locked:', armorySummary);
-      summariesGenerated = true;
+    // When node4 unlocked -> complete Medical Bay and Armory
+    if (moduleIds.includes('node4')) {
+      if (medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
+        console.log('DEBUG: Unlocking node4 - completing Medical Bay');
+        const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
+        newSummaries['medicalBay'] = medicalSummary;
+        newCompletedAreas.add('medicalBay');
+        summariesGenerated = true;
+      }
+      if (armoryMessages.length > 0 && !newSummaries['armory']) {
+        console.log('DEBUG: Unlocking node4 - completing Armory');
+        const armorySummary = await generateAreaSummary('Armory', armoryMessages);
+        newSummaries['armory'] = armorySummary;
+        newCompletedAreas.add('armory');
+        summariesGenerated = true;
+      }
     }
 
-    // When Armory (node3) is chosen, lock Medical Bay if it has messages
-    if (moduleIds.includes('node3') && medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
-      console.log('DEBUG: Armory chosen - locking Medical Bay with', medicalBayMessages.length, 'messages');
-      const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
-      newSummaries['medicalBay'] = medicalSummary;
-      newCompletedAreas.add('medicalBay');
-      console.log('DEBUG: Medical Bay summary generated and locked:', medicalSummary);
-      summariesGenerated = true;
-    }
-
-    // Generate Medical Bay summary when moving to Captain's Quarters (node4) - if not already locked
-    if (moduleIds.includes('node4') && medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
-      console.log('DEBUG: Generating Medical Bay summary with', medicalBayMessages.length, 'messages');
-      const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
-      newSummaries['medicalBay'] = medicalSummary;
-      newCompletedAreas.add('medicalBay');
-      console.log('DEBUG: Medical Bay summary generated:', medicalSummary);
-      summariesGenerated = true;
-    }
-
-    // Generate Armory summary when moving to Captain's Quarters (node4) - if not already locked
-    if (moduleIds.includes('node4') && armoryMessages.length > 0 && !newSummaries['armory']) {
-      console.log('DEBUG: Generating Armory summary with', armoryMessages.length, 'messages');
-      const armorySummary = await generateAreaSummary('Armory', armoryMessages);
-      newSummaries['armory'] = armorySummary;
-      newCompletedAreas.add('armory');
-      console.log('DEBUG: Armory summary generated:', armorySummary);
-      summariesGenerated = true;
-    }
-
-    // Generate Captain's Quarters summary only when moving to Bridge (node5)
+    // When node5 unlocked -> complete Captain's Quarters
     if (moduleIds.includes('node5') && captainsQuartersMessages.length > 0 && !newSummaries['captainsQuarters']) {
-      console.log('DEBUG: Generating Captain\'s Quarters summary with', captainsQuartersMessages.length, 'messages');
+      console.log('DEBUG: Unlocking node5 - completing Captain\'s Quarters');
       const quartersSummary = await generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages);
       newSummaries['captainsQuarters'] = quartersSummary;
       newCompletedAreas.add('captainsQuarters');
-      console.log('DEBUG: Captain\'s Quarters summary generated:', quartersSummary);
+      summariesGenerated = true;
+    }
+
+    // Handle mutual exclusion paths (generate summaries for locked paths)
+    if (moduleIds.includes('node2') && armoryMessages.length > 0 && !newSummaries['armory']) {
+      console.log('DEBUG: Medical Bay chosen - generating Armory summary for exclusion');
+      const armorySummary = await generateAreaSummary('Armory', armoryMessages);
+      newSummaries['armory'] = armorySummary;
+      summariesGenerated = true;
+    }
+    if (moduleIds.includes('node3') && medicalBayMessages.length > 0 && !newSummaries['medicalBay']) {
+      console.log('DEBUG: Armory chosen - generating Medical Bay summary for exclusion');
+      const medicalSummary = await generateAreaSummary('Medical Bay', medicalBayMessages);
+      newSummaries['medicalBay'] = medicalSummary;
       summariesGenerated = true;
     }
 
@@ -529,6 +529,9 @@ Summary:`;
       // Update state with new summaries and completed areas
       setAreaSummaries(newSummaries);
       setCompletedAreas(newCompletedAreas);
+
+      // Force immediate visual update of node colors
+      setTimeout(() => updateNodeHighlighting(), 0);
 
       // Close chat areas that have been completed
       if (newCompletedAreas.has('medicalBay')) {
@@ -651,17 +654,14 @@ Summary:`;
       console.log('DEBUG: Generating new summary for', area.name, 'with', area.messages.length, 'messages');
       const summary = await generateAreaSummary(area.name, area.messages);
 
-      // Update state with the new summary
+      // Update state with the new summary (do NOT mark as completed yet)
       const newSummaries = { ...areaSummaries, [area.key]: summary };
-      const newCompletedAreas = new Set(Array.from(completedAreas));
-      newCompletedAreas.add(area.key);
 
       setAreaSummaries(newSummaries);
-      setCompletedAreas(newCompletedAreas);
+      // Do NOT add to completedAreas here - this should only happen when next area is unlocked
 
       // Save to localStorage immediately
       localStorage.setItem('areaSummaries', JSON.stringify(newSummaries));
-      localStorage.setItem('completedAreas', JSON.stringify(Array.from(newCompletedAreas)));
 
       console.log('DEBUG: Summary generated and saved for', area.name, ':', summary);
 
@@ -677,12 +677,17 @@ Summary:`;
 
   // Function to set active node and update highlighting
   const setActiveNodeAndUpdate = async (nodeId: string) => {
-    console.log('DEBUG: Switching from', activeNode, 'to', nodeId);
+    console.log('DEBUG: setActiveNodeAndUpdate called - switching from', activeNode, 'to', nodeId);
 
     // Generate summary for current area before switching
     if (activeNode && activeNode !== nodeId) {
+      console.log('DEBUG: Generating summary for previous area:', activeNode);
       await generateCurrentAreaSummary(activeNode);
     }
+
+    // IMPORTANT: Complete prior areas when moving to new node
+    console.log('DEBUG: About to call unlockModules with:', [nodeId]);
+    await unlockModules([nodeId]);
 
     setActiveNode(nodeId);
     saveUnlockProgress(); // Save progress whenever active node changes
@@ -724,7 +729,29 @@ Summary:`;
         setMissionBriefingCompleted(progressData.missionBriefingCompleted || false);
         setMissionBriefingSummary(progressData.missionBriefingSummary || '');
         setAreaSummaries(progressData.areaSummaries || {});
-        setCompletedAreas(new Set(progressData.completedAreas || []));
+        // Filter completedAreas to only include areas that should actually be completed
+        // based on progression rules: areas are only completed when the NEXT area is unlocked
+        const unlockedModulesSet = new Set(progressData.unlockedModules || ['node1']);
+        const validCompletedAreas = (progressData.completedAreas || []).filter((area: string) => {
+          // Mission briefing is completed when the NEXT area (node2 or node3) is unlocked
+          if (area === 'missionBriefing') {
+            return unlockedModulesSet.has('node2') || unlockedModulesSet.has('node3');
+          }
+          // Medical Bay/Armory are only completed when the NEXT area (Bridge/node5) is unlocked
+          if (area === 'medicalBay' || area === 'armory') {
+            return unlockedModulesSet.has('node5');
+          }
+          // Captain's Quarters is only completed when the NEXT area (Bridge/node5) is unlocked
+          if (area === 'captainsQuarters') {
+            return unlockedModulesSet.has('node5');
+          }
+          // Bridge is completed when marked as such (final area)
+          if (area === 'bridge') {
+            return true;
+          }
+          return false;
+        });
+        setCompletedAreas(new Set(validCompletedAreas));
         
         // Also load from separate localStorage keys for backward compatibility
         const savedSummary = localStorage.getItem('missionBriefingSummary');
@@ -749,25 +776,35 @@ Summary:`;
 
   // Function to update node highlighting based on active node
   const updateNodeHighlighting = () => {
-    setNodes(prevNodes => 
+    setNodes(prevNodes =>
       prevNodes.map(node => {
         const isActive = node.id === activeNode;
         const isUnlocked = unlockedModules.has(node.id);
-        const isCompleted = (node.id === 'node1' && missionBriefingCompleted) || 
-                           (node.id !== 'node1' && isUnlocked);
-        
+
+        // Check if area is actually completed (chat locked down)
+        const areaKey = {
+          'node1': 'missionBriefing',
+          'node2': 'medicalBay',
+          'node3': 'armory',
+          'node4': 'captainsQuarters',
+          'node5': 'bridge'
+        }[node.id as string];
+        const isCompleted = areaKey ? completedAreas.has(areaKey) : false;
+
         // Always remove lock emoji from unlocked nodes
-          const label = isUnlocked ? (node.data.label as string).replace('🔒 ', '') : node.data.label;
-        
+        const label = isUnlocked ? (node.data.label as string).replace('🔒 ', '') : node.data.label;
+
         if (isUnlocked) {
-          // Unlocked node - normal styling
+          // Unlocked node styling - add green tinge if completed
           return {
             ...node,
             data: { ...node.data, label, unlocked: isUnlocked },
             style: {
               ...node.style,
               color: '#000',
-              opacity: 1
+              opacity: 1,
+              backgroundColor: isCompleted ? '#dcfce7' : 'white', // Light green if completed
+              border: isCompleted ? '2px solid #16a34a' : '2px solid #3b82f6' // Green border if completed
             }
           };
         } else {
@@ -778,7 +815,9 @@ Summary:`;
             style: {
               ...node.style,
               color: '#666',
-              opacity: 0.6
+              opacity: 0.6,
+              backgroundColor: '#f3f4f6',
+              border: '2px solid #d1d5db'
             }
           };
         }
@@ -1234,10 +1273,10 @@ Summary:`;
     loadUnlockProgress();
   }, []);
 
-  // Update node highlighting when active node or unlocked modules change
+  // Update node highlighting when active node, unlocked modules, or completed areas change
   useEffect(() => {
     updateNodeHighlighting();
-  }, [activeNode, unlockedModules]);
+  }, [activeNode, unlockedModules, completedAreas]);
 
   // Save progress when state changes
   useEffect(() => {
@@ -1357,7 +1396,58 @@ Summary:`;
     }
 
     // Set active node when clicking on unlocked nodes
-    setActiveNodeAndUpdate(node.id);
+    setActiveNode(node.id);
+
+    // Immediately complete prior areas
+    if (node.id === 'node2' || node.id === 'node3') {
+      // Complete Mission Briefing ALWAYS
+      if (!completedAreas.has('missionBriefing')) {
+        // Generate summary if messages exist
+        if (briefingMessages.length > 0) {
+          generateAreaSummary('Mission Briefing', briefingMessages).then(summary => {
+            setAreaSummaries(prev => ({...prev, missionBriefing: summary}));
+          });
+        }
+        setCompletedAreas(prev => new Set([...prev, 'missionBriefing']));
+        setMissionBriefingOpen(false);
+        console.log('🔥 FORCED Mission Briefing completion from node click');
+      }
+    }
+    if (node.id === 'node4') {
+      // Complete Medical Bay and Armory ALWAYS
+      const newCompleted = new Set(completedAreas);
+      // Generate summaries if messages exist
+      if (medicalBayMessages.length > 0) {
+        generateAreaSummary('Medical Bay', medicalBayMessages).then(summary => {
+          setAreaSummaries(prev => ({...prev, medicalBay: summary}));
+        });
+      }
+      if (armoryMessages.length > 0) {
+        generateAreaSummary('Armory', armoryMessages).then(summary => {
+          setAreaSummaries(prev => ({...prev, armory: summary}));
+        });
+      }
+      newCompleted.add('medicalBay');
+      newCompleted.add('armory');
+      setMedicalBayOpen(false);
+      setArmoryOpen(false);
+      setCompletedAreas(newCompleted);
+      console.log('🔥 FORCED Medical Bay + Armory completion from node click');
+    }
+    if (node.id === 'node5') {
+      // Complete Captain's Quarters ALWAYS
+      if (!completedAreas.has('captainsQuarters')) {
+        // Generate summary if messages exist
+        if (captainsQuartersMessages.length > 0) {
+          generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages).then(summary => {
+            setAreaSummaries(prev => ({...prev, captainsQuarters: summary}));
+          });
+        }
+        setCompletedAreas(prev => new Set([...prev, 'captainsQuarters']));
+        setCaptainsQuartersOpen(false);
+        console.log('🔥 FORCED Captain\'s Quarters completion from node click');
+      }
+    }
     
     // Get user's party from localStorage, with campaign fallback
     let party: Hero[] = [];
@@ -1391,8 +1481,14 @@ Summary:`;
       setPartyData(party);
 
       if (node.id === 'node1') { // Mission Briefing
+        // Don't open if area is completed
+        if (completedAreas.has('missionBriefing')) {
+          console.log('Mission Briefing is completed - not opening chat');
+          return;
+        }
+
         setBriefingParty(party);
-        
+
         // Load existing chat history or create initial message
         const savedMessages = loadCampaignChat('missionBriefing');
         if (savedMessages.length > 0) {
@@ -1407,11 +1503,17 @@ Summary:`;
               }
             ]);
         }
-        
+
         setMissionBriefingOpen(true);
       } else if (node.id === 'node2') { // Medical Bay
+        // Don't open if area is completed
+        if (completedAreas.has('medicalBay')) {
+          console.log('Medical Bay is completed - not opening chat');
+          return;
+        }
+
         setMedicalBayParty(party);
-        
+
         const savedMessages = loadCampaignChat('medicalBay');
         if (savedMessages.length > 0) {
           setMedicalBayMessages(savedMessages);
@@ -1425,11 +1527,17 @@ Summary:`;
             }
           ]);
         }
-        
+
         setMedicalBayOpen(true);
       } else if (node.id === 'node3') { // Armory
+        // Don't open if area is completed
+        if (completedAreas.has('armory')) {
+          console.log('Armory is completed - not opening chat');
+          return;
+        }
+
         setArmoryParty(party);
-        
+
         const savedMessages = loadCampaignChat('armory');
         if (savedMessages.length > 0) {
           setArmoryMessages(savedMessages);
@@ -1443,11 +1551,17 @@ Summary:`;
             }
           ]);
         }
-        
+
         setArmoryOpen(true);
       } else if (node.id === 'node4') { // Captain's Quarters
+        // Don't open if area is completed
+        if (completedAreas.has('captainsQuarters')) {
+          console.log('Captain\'s Quarters is completed - not opening chat');
+          return;
+        }
+
         setCaptainsQuartersParty(party);
-        
+
         const savedMessages = loadCampaignChat('captainsQuarters');
         if (savedMessages.length > 0) {
           setCaptainsQuartersMessages(savedMessages);
@@ -1461,7 +1575,7 @@ Summary:`;
             }
           ]);
         }
-        
+
         setCaptainsQuartersOpen(true);
       } else if (node.id === 'node5') { // Bridge/Boss Battle
         setBridgeParty(party);
@@ -2250,51 +2364,104 @@ RESPONSE REQUIREMENTS:
                     }
                     
                     // Set active node to the newly unlocked area
-                    setActiveNodeAndUpdate(nodeToUnlock);
-                    
+                    setActiveNode(nodeToUnlock);
+
+                    // IMMEDIATELY complete prior areas when unlocking
+                    if (nodeToUnlock === 'node2' || nodeToUnlock === 'node3') {
+                      // Complete Mission Briefing ALWAYS
+                      if (briefingMessages.length > 0) {
+                        generateAreaSummary('Mission Briefing', briefingMessages).then(summary => {
+                          setAreaSummaries(prev => ({...prev, missionBriefing: summary}));
+                        });
+                      }
+                      setCompletedAreas(prev => new Set([...prev, 'missionBriefing']));
+                      setMissionBriefingOpen(false);
+                      console.log('🔥 FORCED Mission Briefing completion');
+                    }
+                    if (nodeToUnlock === 'node4') {
+                      // Complete Medical Bay and Armory ALWAYS
+                      if (medicalBayMessages.length > 0) {
+                        generateAreaSummary('Medical Bay', medicalBayMessages).then(summary => {
+                          setAreaSummaries(prev => ({...prev, medicalBay: summary}));
+                        });
+                      }
+                      if (armoryMessages.length > 0) {
+                        generateAreaSummary('Armory', armoryMessages).then(summary => {
+                          setAreaSummaries(prev => ({...prev, armory: summary}));
+                        });
+                      }
+                      const newCompleted = new Set(completedAreas);
+                      newCompleted.add('medicalBay');
+                      newCompleted.add('armory');
+                      setMedicalBayOpen(false);
+                      setArmoryOpen(false);
+                      setCompletedAreas(newCompleted);
+                      console.log('🔥 FORCED Medical Bay + Armory completion from unlock');
+                    }
+                    if (nodeToUnlock === 'node5') {
+                      // Complete Captain's Quarters ALWAYS
+                      if (captainsQuartersMessages.length > 0) {
+                        generateAreaSummary('Captain\'s Quarters', captainsQuartersMessages).then(summary => {
+                          setAreaSummaries(prev => ({...prev, captainsQuarters: summary}));
+                        });
+                      }
+                      setCompletedAreas(prev => new Set([...prev, 'captainsQuarters']));
+                      setCaptainsQuartersOpen(false);
+                      console.log('🔥 FORCED Captain\'s Quarters completion from unlock');
+                    }
+
                     // Open the corresponding chat modal with proper setup
                     if (nodeToUnlock === 'node2') {
-                      setMedicalBayParty(party);
-                      const savedMessages = loadCampaignChat('medicalBay');
-                      if (savedMessages.length > 0) {
-                        setMedicalBayMessages(savedMessages);
-                      } else {
-                        setMedicalBayMessages([{
-                          sender: 'hero',
-                          text: '*The medical bay is dimly lit with flickering emergency lights. Medical equipment hums softly in the background.*\n\nYou find yourself in the ship\'s medical facility. Various diagnostic tools and treatment stations line the walls, though some appear to have been damaged or tampered with.\n\n**Your party has entered the Medical Bay.**\n\nWhat would you like to investigate?',
-                          id: Date.now().toString(),
-                          speaker: 'Narrator'
-                        }]);
+                      // Don't open if area is completed
+                      if (!completedAreas.has('medicalBay')) {
+                        setMedicalBayParty(party);
+                        const savedMessages = loadCampaignChat('medicalBay');
+                        if (savedMessages.length > 0) {
+                          setMedicalBayMessages(savedMessages);
+                        } else {
+                          setMedicalBayMessages([{
+                            sender: 'hero',
+                            text: '*The medical bay is dimly lit with flickering emergency lights. Medical equipment hums softly in the background.*\n\nYou find yourself in the ship\'s medical facility. Various diagnostic tools and treatment stations line the walls, though some appear to have been damaged or tampered with.\n\n**Your party has entered the Medical Bay.**\n\nWhat would you like to investigate?',
+                            id: Date.now().toString(),
+                            speaker: 'Narrator'
+                          }]);
+                        }
+                        setMedicalBayOpen(true);
                       }
-                      setMedicalBayOpen(true);
                     } else if (nodeToUnlock === 'node3') {
-                      setArmoryParty(party);
-                      const savedMessages = loadCampaignChat('armory');
-                      if (savedMessages.length > 0) {
-                        setArmoryMessages(savedMessages);
-                      } else {
-                        setArmoryMessages([{
-                          sender: 'hero',
-                          text: '*The armory door slides open with a hiss, revealing rows of weapon lockers and tactical equipment.*\n\nYou\'ve entered the ship\'s armory. Various weapons, armor, and tactical gear are stored here, though some lockers appear to have been forcibly opened.\n\n**Your party has entered the Armory.**\n\nWhat would you like to do here?',
-                          id: Date.now().toString(),
-                          speaker: 'Narrator'
-                        }]);
+                      // Don't open if area is completed
+                      if (!completedAreas.has('armory')) {
+                        setArmoryParty(party);
+                        const savedMessages = loadCampaignChat('armory');
+                        if (savedMessages.length > 0) {
+                          setArmoryMessages(savedMessages);
+                        } else {
+                          setArmoryMessages([{
+                            sender: 'hero',
+                            text: '*The armory door slides open with a hiss, revealing rows of weapon lockers and tactical equipment.*\n\nYou\'ve entered the ship\'s armory. Various weapons, armor, and tactical gear are stored here, though some lockers appear to have been forcibly opened.\n\n**Your party has entered the Armory.**\n\nWhat would you like to do here?',
+                            id: Date.now().toString(),
+                            speaker: 'Narrator'
+                          }]);
+                        }
+                        setArmoryOpen(true);
                       }
-                      setArmoryOpen(true);
                     } else if (nodeToUnlock === 'node4') {
-                      setCaptainsQuartersParty(party);
-                      const savedMessages = loadCampaignChat('captainsQuarters');
-                      if (savedMessages.length > 0) {
-                        setCaptainsQuartersMessages(savedMessages);
-                      } else {
-                        setCaptainsQuartersMessages([{
-                          sender: 'hero',
-                          text: '*You enter the captain\'s quarters - a spacious room with a large desk, personal terminal, and windows overlooking space.*\n\nThe room appears to have been recently occupied, with items scattered about. The captain\'s personal terminal is still active, displaying various ship status reports.\n\n**Your party has entered the Captain\'s Quarters.**\n\nWhat would you like to investigate?',
-                          id: Date.now().toString(),
-                          speaker: 'Narrator'
-                        }]);
+                      // Don't open if area is completed
+                      if (!completedAreas.has('captainsQuarters')) {
+                        setCaptainsQuartersParty(party);
+                        const savedMessages = loadCampaignChat('captainsQuarters');
+                        if (savedMessages.length > 0) {
+                          setCaptainsQuartersMessages(savedMessages);
+                        } else {
+                          setCaptainsQuartersMessages([{
+                            sender: 'hero',
+                            text: '*You enter the captain\'s quarters - a spacious room with a large desk, personal terminal, and windows overlooking space.*\n\nThe room appears to have been recently occupied, with items scattered about. The captain\'s personal terminal is still active, displaying various ship status reports.\n\n**Your party has entered the Captain\'s Quarters.**\n\nWhat would you like to investigate?',
+                            id: Date.now().toString(),
+                            speaker: 'Narrator'
+                          }]);
+                        }
+                        setCaptainsQuartersOpen(true);
                       }
-                      setCaptainsQuartersOpen(true);
                     } else if (nodeToUnlock === 'node5') {
                       setBridgeParty(party);
                       const savedMessages = loadCampaignChat('bridge');
