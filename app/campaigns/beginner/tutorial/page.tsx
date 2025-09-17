@@ -1408,7 +1408,7 @@ Summary:`;
             setAreaSummaries(prev => ({...prev, missionBriefing: summary}));
           });
         }
-        setCompletedAreas(prev => new Set([...prev, 'missionBriefing']));
+        setCompletedAreas(prev => new Set([...Array.from(prev), 'missionBriefing']));
         setMissionBriefingOpen(false);
         console.log('🔥 FORCED Mission Briefing completion from node click');
       }
@@ -1443,7 +1443,7 @@ Summary:`;
             setAreaSummaries(prev => ({...prev, captainsQuarters: summary}));
           });
         }
-        setCompletedAreas(prev => new Set([...prev, 'captainsQuarters']));
+        setCompletedAreas(prev => new Set([...Array.from(prev), 'captainsQuarters']));
         setCaptainsQuartersOpen(false);
         console.log('🔥 FORCED Captain\'s Quarters completion from node click');
       }
@@ -2374,7 +2374,7 @@ RESPONSE REQUIREMENTS:
                           setAreaSummaries(prev => ({...prev, missionBriefing: summary}));
                         });
                       }
-                      setCompletedAreas(prev => new Set([...prev, 'missionBriefing']));
+                      setCompletedAreas(prev => new Set([...Array.from(prev), 'missionBriefing']));
                       setMissionBriefingOpen(false);
                       console.log('🔥 FORCED Mission Briefing completion');
                     }
@@ -2405,7 +2405,7 @@ RESPONSE REQUIREMENTS:
                           setAreaSummaries(prev => ({...prev, captainsQuarters: summary}));
                         });
                       }
-                      setCompletedAreas(prev => new Set([...prev, 'captainsQuarters']));
+                      setCompletedAreas(prev => new Set([...Array.from(prev), 'captainsQuarters']));
                       setCaptainsQuartersOpen(false);
                       console.log('🔥 FORCED Captain\'s Quarters completion from unlock');
                     }
